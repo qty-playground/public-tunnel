@@ -165,7 +165,7 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 
 ### 權限控制
 
-**US-001**: Admin Session 列表查詢
+**US-001**: Admin Session List Query
 ```
 As an admin user
 I want to list all sessions with valid token
@@ -178,7 +178,7 @@ Acceptance Criteria:
 - And each session should include basic metadata
 ```
 
-**US-002**: 一般使用者權限限制
+**US-002**: Regular User Access Restriction
 ```
 As a regular user
 I want to be denied when trying to list all sessions
@@ -193,7 +193,7 @@ Acceptance Criteria:
 
 ### Session 管理
 
-**US-003**: 預設 Session 自動加入
+**US-003**: Default Session Auto Join
 ```
 As a client
 I want to automatically join default session when no session-id specified
@@ -206,7 +206,7 @@ Acceptance Criteria:
 - And my client-id should be recorded in the session
 ```
 
-**US-004**: 指定 Session 協作模式
+**US-004**: Specified Session Collaboration Mode
 ```
 As a client
 I want to join existing session when session-id is specified
@@ -219,7 +219,7 @@ Acceptance Criteria:
 - And I should be able to see other clients in the same session
 ```
 
-**US-005**: Client 存在狀態追蹤
+**US-005**: Client Presence Tracking
 ```
 As a server
 I want to track client presence through polling
@@ -232,7 +232,7 @@ Acceptance Criteria:
 - And the client should be marked as online
 ```
 
-**US-016**: Client 離線狀態管理
+**US-016**: Client Offline Status Management
 ```
 As a server
 I want to mark clients offline after 30 seconds of no polling
@@ -245,7 +245,7 @@ Acceptance Criteria:
 - And the client should not receive new commands
 ```
 
-**US-017**: Client 自動重連機制
+**US-017**: Client Auto Reconnection
 ```
 As a client
 I want to automatically reconnect after network issues
@@ -260,7 +260,7 @@ Acceptance Criteria:
 
 ### 指令執行
 
-**US-006**: 指定 Client 指令傳送
+**US-006**: Targeted Client Command Sending
 ```
 As an AI assistant
 I want to send commands to specific clients
@@ -273,7 +273,7 @@ Acceptance Criteria:
 - And only that client should receive the command
 ```
 
-**US-007**: 指令 FIFO 佇列管理
+**US-007**: Command FIFO Queue Management
 ```
 As a server
 I want to queue commands in FIFO order
@@ -286,7 +286,7 @@ Acceptance Criteria:
 - And each polling should return only one command
 ```
 
-**US-008**: 同步轉非同步機制
+**US-008**: Sync To Async Auto Switch
 ```
 As a server
 I want to automatically switch sync to async when execution takes too long
@@ -299,7 +299,7 @@ Acceptance Criteria:
 - And a command-id should be returned for polling
 ```
 
-**US-009**: Client 單次指令提取
+**US-009**: Client Single Command Retrieval
 ```
 As a client
 I want to receive one command at a time when polling
@@ -312,7 +312,7 @@ Acceptance Criteria:
 - And that command should be removed from the queue
 ```
 
-**US-020**: 同步非同步模式選擇
+**US-020**: Sync Async Mode Selection
 ```
 As an AI assistant
 I want to choose sync/async mode based on expected execution time
@@ -325,7 +325,7 @@ Acceptance Criteria:
 - And the response format should match the chosen mode
 ```
 
-**US-021**: 統一結果查詢機制
+**US-021**: Unified Result Query Mechanism
 ```
 As a server
 I want to handle both sync and async commands through the same result mechanism
@@ -340,7 +340,7 @@ Acceptance Criteria:
 
 ### 錯誤處理
 
-**US-013**: 不存在 Client 錯誤處理
+**US-013**: Non Existent Client Error Handling
 ```
 As a server
 I want to reject commands targeting non-existent clients
@@ -353,7 +353,7 @@ Acceptance Criteria:
 - And the command should not be queued
 ```
 
-**US-014**: 離線 Client 指令拒絕
+**US-014**: Offline Client Command Rejection
 ```
 As a server
 I want to reject commands targeting offline clients
@@ -366,7 +366,7 @@ Acceptance Criteria:
 - And the command should not be queued
 ```
 
-**US-015**: Client 執行錯誤回報
+**US-015**: Client Execution Error Reporting
 ```
 As a client
 I want to report execution failures in the same format as success
@@ -381,7 +381,7 @@ Acceptance Criteria:
 
 ### 檔案管理
 
-**US-010**: AI 檔案上傳功能
+**US-010**: AI File Upload Feature
 ```
 As an AI assistant
 I want to upload files to session
@@ -394,7 +394,7 @@ Acceptance Criteria:
 - And clients in the session should be able to download it
 ```
 
-**US-011**: Client 結果檔案上傳
+**US-011**: Client Result File Upload
 ```
 As a client
 I want to upload result files with metadata
@@ -407,7 +407,7 @@ Acceptance Criteria:
 - And the AI should be able to browse and download selectively
 ```
 
-**US-012**: Session 檔案存取隔離
+**US-012**: Session File Access Isolation
 ```
 As a user
 I want file access restricted to my session
@@ -420,7 +420,7 @@ Acceptance Criteria:
 - And cross-session file access should be denied
 ```
 
-**US-022**: 檔案唯一識別機制
+**US-022**: File Unique Identification
 ```
 As an AI assistant
 I want files identified by unique file-id
@@ -435,7 +435,7 @@ Acceptance Criteria:
 
 ### 結果查詢
 
-**US-018**: 指令執行狀態查詢
+**US-018**: Command Execution Status Query
 ```
 As an AI assistant
 I want to query command execution status
@@ -448,7 +448,7 @@ Acceptance Criteria:
 - And I should know if the command is pending, running, or completed
 ```
 
-**US-019**: Session 指令歷史查詢
+**US-019**: Session Command History Query
 ```
 As an AI assistant
 I want to list command history in a session
