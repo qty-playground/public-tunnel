@@ -173,7 +173,7 @@ So that I can manage the entire system
 
 Acceptance Criteria:
 - Given I have a valid admin token
-- When I request GET /api/sessions
+- When I query GET /api/sessions
 - Then I should receive a list of all sessions
 - And each session should include basic metadata
 ```
@@ -186,7 +186,7 @@ So that system security is maintained
 
 Acceptance Criteria:
 - Given I don't have a valid admin token
-- When I request GET /api/sessions
+- When I query GET /api/sessions
 - Then I should receive a 403 Forbidden response
 - And I should not see any session information
 ```
@@ -228,47 +228,34 @@ So that I can maintain accurate client status
 Acceptance Criteria:
 - Given a client is polling regularly
 - When the client sends polling requests
-- Then I should update the client's last seen timestamp
+- Then I should update the client's last_seen timestamp
 - And the client should be marked as online
 ```
 
 **US-016**: Client Offline Status Management
 ```
 As a server
-I want to mark clients offline after 30 seconds of no polling
+I want to mark clients offline after configured threshold of no polling
 So that system state reflects reality
 
 Acceptance Criteria:
 - Given a client has stopped polling
-- When 30 seconds have passed since the last polling
+- When the configured time threshold has passed since last_seen
 - Then the client should be marked as offline
 - And the client should not receive new commands
 ```
 
-**US-017**: Client Auto Reconnection
-```
-As a client
-I want to automatically reconnect after network issues
-So that service is resilient to temporary failures
-
-Acceptance Criteria:
-- Given my network connection is restored
-- When I resume polling
-- Then I should automatically rejoin my session
-- And I should be marked as online again
-```
-
 ### 指令執行
 
-**US-006**: Targeted Client Command Sending
+**US-006**: Targeted Client Command Submission
 ```
 As an AI assistant
-I want to send commands to specific clients
+I want to submit commands to specific clients
 So that tasks are executed on target machines
 
 Acceptance Criteria:
 - Given I have a valid target client-id
-- When I send a command with target_client specified
+- When I submit a command with target_client specified
 - Then the command should be queued for that specific client
 - And only that client should receive the command
 ```
@@ -280,7 +267,7 @@ I want to queue commands in FIFO order
 So that commands are processed fairly
 
 Acceptance Criteria:
-- Given multiple commands are sent to the same client
+- Given multiple commands are submitted to the same client
 - When the client polls for commands
 - Then commands should be returned in first-in-first-out order
 - And each polling should return only one command
@@ -293,8 +280,8 @@ I want to automatically switch sync to async when execution takes too long
 So that the system remains responsive
 
 Acceptance Criteria:
-- Given a command is sent in sync mode
-- When execution time exceeds the threshold
+- Given a command is submitted in sync mode
+- When execution time exceeds the configured threshold
 - Then the response should switch to async mode
 - And a command-id should be returned for polling
 ```
@@ -319,7 +306,7 @@ I want to choose sync/async mode based on expected execution time
 So that I can optimize response handling
 
 Acceptance Criteria:
-- Given I'm sending a command
+- Given I'm submitting a command
 - When I specify sync or async mode
 - Then the server should handle the command accordingly
 - And the response format should match the chosen mode
@@ -442,7 +429,7 @@ I want to query command execution status
 So that I can track progress of long-running tasks
 
 Acceptance Criteria:
-- Given I have sent a command
+- Given I have submitted a command
 - When I query the command status using command-id
 - Then I should receive current execution status
 - And I should know if the command is pending, running, or completed
@@ -456,7 +443,7 @@ So that I can review past operations
 
 Acceptance Criteria:
 - Given commands have been executed in a session
-- When I request the command history
+- When I query the command history
 - Then I should receive a list of command-ids
 - And I should be able to query details for each command
 ```
