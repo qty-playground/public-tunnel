@@ -18,7 +18,8 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 
 **指令送出**
 - 透過 HTTP API 提交指令到 server
-- 每個指令包含指令內容和隨機 UUID (command-id)
+- 每個指令包含指令內容、隨機 UUID (command-id) 和目標 client-id
+- 必須明確指定 target_client（必填參數）
 - 可選擇同步或非同步執行模式
 
 **執行模式選擇**
@@ -37,6 +38,11 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 - 根據 file-id 選擇性下載需要的檔案（需自行處理同名檔案的識別）
 - 上傳檔案供 client 端使用
 - 所有檔案操作限制在當前 session 範圍內
+
+**Session 和 Client 管理**
+- 使用預設 session（default）進行一般操作
+- 透過 `GET /api/session/{session-id}/clients` 查詢可用 client
+- 具備 admin token 時可列出所有 sessions：`GET /api/sessions`
 
 ### Client 端
 
@@ -57,6 +63,11 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 - **session-id**：預設隨機生成，可透過 query string 指定
 - 兩個參數都支援自動生成或手動指定
 - 多個 client 指定相同 session-id 時自動加入同一個 session（協作模式）
+
+**指令取得機制**
+- 每次 polling 從自己的 command queue 取出一個指令
+- 指令被取出後即從 queue 中移除
+- Client 自行決定執行節奏和併發策略
 
 **指令執行**
 - 接收並執行目標環境支援的指令格式
@@ -88,6 +99,7 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 **Session 管理**
 - 為每個 client 連線建立獨立的 session
 - 支援多個 client 共用同一個 session（協作模式）
+- 提供預設 session（default）供一般使用
 - Session 資料（檔案、指令記錄）長期保留，支援歷史查詢
 - Client 狀態追蹤：最後 polling 時間超過 30 秒視為離線（可調整）
 - 離線狀態的 client 會被禁止接收新指令
@@ -96,12 +108,14 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 **指令分發**
 - 接收來自 AI 助手的指令請求
 - 根據執行模式提供不同的回應策略
-- 將指令暫存並等待對應的 client polling
+- 為每個 client 維護獨立的 command queue（FIFO 順序）
+- 指令暫存在對應 client 的 queue 中等待 polling
 - 不提供廣播模式，AI 助手需針對特定 client 直接下指令
 - 重複執行的避免依賴 AI 助手的智慧判斷
 
 **結果管理**
 - 收集來自 client 的執行結果
+- 維護統一的 result queue，以 command-id 為索引
 - 提供統一的結果查詢 API
 - 管理指令執行狀態追蹤
 
@@ -111,6 +125,29 @@ public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI �
 - 以 file-id 作為檔案的唯一識別，允許同名檔案存在
 - 檔案存取權限嚴格限制在同一個 session 內
 - 維護檔案的 metadata 和存取權限
+
+## 系統行為規則
+
+### 權限控制模型
+- **管理者權限**：需要有效的 admin token
+  - 可列出所有 sessions：`GET /api/sessions`
+  - 可跨 session 查看和操作
+- **一般操作**：無需特殊權限，僅需知道有效的 session-id
+  - Client polling、指令送出、結果查詢、檔案操作
+  - Session 內的 client 列表查詢
+
+### 指令執行規則
+- 每個指令必須明確指定 target_client（必填參數）
+- Server 為每個 client 維護獨立的 command queue（FIFO 順序）
+- Client polling 時一次取出一個指令，取出後該指令從 queue 移除
+- 指令執行的併發性由 client 端實作決定
+- 執行結果統一存放在 result queue，以 command-id 為索引
+
+### 檔案管理規則
+- 檔案大小無限制
+- 以 file-id 作為唯一識別，允許同名檔案存在
+- 檔案存取權限嚴格限制在 session 範圍內
+- AI 助手需自行處理同名檔案的識別和選擇
 
 ## 技術細節
 
