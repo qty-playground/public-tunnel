@@ -38,7 +38,7 @@
 - **Client**：Client端、client → 系統的外部消費者，透過 HTTP API 使用我們的服務
 - **Environment**：遠端環境、本機環境、生產環境 → 拽象概念，Client運行的位置，不需要實作
 - **Infrastructure**：機器、伺服器、Web前端、API後端、資料庫伺服器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
-- **ExecutionMode**：執行模式、同步、非同步 → Command的屬性，不需要獨立類別
+- **ExecutionMode**：執行模式、同步、非同步 → 已移除，系統自動根據執行時間切換，無需人為設定
 - **Communication**：HTTP polling機制、主動polling、polling → HTTP 協定實作細節，由 Server 提供 API 終點
 
 

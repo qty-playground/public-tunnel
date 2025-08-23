@@ -1,0 +1,254 @@
+# API Skeleton 建立提示詞 - Phase 2
+
+## 任務概述
+根據 OOA 設計和選定的 User Story，建立 FastAPI 的 API skeleton。這個階段專注於建立正確的 API 結構，確保 input/output 都使用 Pydantic models，並為 Red-Green-Refactor 循環做準備。
+
+## 必讀文件
+請先使用 Read tool 載入：
+1. `docs/design/03_ooa_design.md` - 物件導向分析設計（實作藍圖）
+2. 目前正在實作的 User Story 和對應的 BDD tests
+3. `public_tunnel/main.py` - 主要 FastAPI app
+4. `public_tunnel/models/` - 現有的 Pydantic models
+
+## Python 編碼風格要求
+**遵循尖叫架構和自我文件化的編碼風格：**
+1. **絕對導入**：ALWAYS 使用絕對導入，不使用相對導入
+2. **自我文件化命名**：方法和類別名稱應該完整表達業務意圖
+3. **強制類型提示**：所有函數和變數都必須有類型提示
+4. **業務領域語言**：使用領域專用的術語命名
+5. **無註解代碼**：透過優秀命名讓代碼自我解釋
+
+## Phase 2 目標
+
+### 1. API 端點建立
+- 根據 User Story 和 OOA 設計建立對應的 API 端點
+- 確保 HTTP verb、路徑、input/output 都正確
+- 實作可以是空的或直接回傳 HTTP error (如 501 Not Implemented)
+
+### 2. Pydantic Model 優先
+- 所有 input/output 都必須使用有意義的 Pydantic models
+- 避免使用 primitive types (str, int, dict 等)
+- 建立符合業務邏輯的資料結構
+
+### 3. E2E 測試相容性
+- API 設計必須支援 BDD 測試的 E2E 特性
+- 確保測試能夠透過 HTTP 請求驗證完整流程
+
+### 4. 模組化架構
+- 不直接在 `public_tunnel/main.py` 實作業務邏輯
+- 在 `public_tunnel/web/` 下建立獨立模組
+- 每組相關的 API 端點一個模組
+
+### 5. 尖叫架構命名
+- 模組名稱必須清楚表達其業務用途
+- 檔案名稱和結構要能讓人一眼看出系統的功能
+
+### 6. 測試整合準備
+- 修改 BDD tests 讓測試失敗能明確識別來自 API error
+- 為 Red-Green-Refactor 循環建立清楚的起始點
+
+## 實作步驟
+
+### Step 1: 分析 User Story 的 API 需求
+1. 從選定的 User Story 識別需要的 API 端點
+2. 確認 HTTP methods、路徑格式、參數
+3. 分析 input/output 的資料結構需求
+
+### Step 2: 設計 Pydantic Models
+在 `public_tunnel/models/` 建立或更新相關的資料模型，遵循業務領域命名：
+
+```python
+from pydantic import BaseModel
+from typing import Optional, List
+from enum import Enum
+from datetime import datetime
+
+class CommandExecutionStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class SubmitCommandToClientRequest(BaseModel):
+    command_content: str
+    target_client_id: str
+    timeout_seconds: Optional[int] = None
+
+class CommandSubmissionResponse(BaseModel):
+    command_id: str
+    execution_status: CommandExecutionStatus
+    submission_timestamp: datetime
+    target_client_id: str
+    estimated_completion_time: Optional[datetime] = None
+
+class CommandExecutionStatusResponse(BaseModel):
+    command_id: str
+    execution_status: CommandExecutionStatus
+    client_id: str
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    result_summary: Optional[str] = None
+    error_message: Optional[str] = None
+```
+
+### Step 3: 建立 Web 模組
+在 `public_tunnel/web/` 下建立獨立功能模組，每個端點一個模組：
+
+```python
+# public_tunnel/web/submit_commands_to_clients.py
+from fastapi import APIRouter, HTTPException
+from typing import Dict, Any
+from public_tunnel.models.command import SubmitCommandToClientRequest, CommandSubmissionResponse
+
+router: APIRouter = APIRouter()
+
+@router.post("/api/sessions/{session_id}/commands", response_model=CommandSubmissionResponse)
+async def submit_command_to_available_client_in_session(
+    session_id: str,
+    command_request: SubmitCommandToClientRequest
+) -> CommandSubmissionResponse:
+    raise HTTPException(
+        status_code=501,
+        detail="Command submission to client not implemented yet"
+    )
+```
+
+```python  
+# public_tunnel/web/query_command_execution_status.py
+from fastapi import APIRouter, HTTPException
+from public_tunnel.models.command import CommandExecutionStatusResponse
+
+router: APIRouter = APIRouter()
+
+@router.get("/api/sessions/{session_id}/commands/{command_id}", response_model=CommandExecutionStatusResponse)
+async def get_command_execution_status_from_session(
+    session_id: str, 
+    command_id: str
+) -> CommandExecutionStatusResponse:
+    raise HTTPException(
+        status_code=501,
+        detail="Command execution status query not implemented yet"
+    )
+```
+
+### Step 4: 註冊路由到主應用
+在 `public_tunnel/main.py` 中註冊所有模組：
+
+```python
+from fastapi import FastAPI
+from typing import Dict, str
+from public_tunnel.web import submit_commands_to_clients
+from public_tunnel.web import query_command_execution_status
+
+app: FastAPI = FastAPI(
+    title="Public Tunnel API",
+    description="A network tunneling solution for AI assistants",
+    version="0.1.0"
+)
+
+# 註冊各個業務功能模組
+app.include_router(submit_commands_to_clients.router)
+app.include_router(query_command_execution_status.router)
+
+@app.get("/")
+async def get_api_root_information() -> Dict[str, str]:
+    return {"message": "Public Tunnel API is running"}
+
+@app.get("/health")
+async def get_api_health_status() -> Dict[str, str]:
+    return {"status": "healthy"}
+```
+
+### Step 5: 確保 BDD Tests 正確失敗
+BDD tests 應該因為收到 501 錯誤而失敗，這證明 API skeleton 階段完成：
+
+```python
+# tests/features/us001_admin_session_list_query/when_query_sessions.py
+from conftest import BDDPhase
+
+def execute(context) -> None:
+    context.phase = BDDPhase.WHEN
+    admin_sessions_response = context.test_client.get("/api/sessions")
+    context.response = admin_sessions_response
+```
+
+```python
+# tests/features/us001_admin_session_list_query/then_receive_session_list.py
+from conftest import BDDPhase
+from typing import Dict, Any
+
+def execute(context) -> None:
+    context.phase = BDDPhase.THEN
+    
+    # 測試應該在這裡失敗，因為 API 回傳 501 Not Implemented
+    # 這個失敗證明 API skeleton 已正確建立
+    assert context.response.status_code == 200, f"Expected successful session list, got {context.response.status_code}"
+    
+    sessions_data: Dict[str, Any] = context.response.json()
+    assert "sessions" in sessions_data, "Response should contain sessions list"
+```
+
+## 架構原則
+
+### Session-Based API 設計
+所有 API 端點都應該遵循 session-based 格式：
+```
+POST /api/sessions/{session_id}/commands
+GET  /api/sessions/{session_id}/clients
+GET  /api/sessions/{session_id}/commands/{command_id}
+POST /api/sessions/{session_id}/files
+```
+
+### 錯誤處理標準化
+- 使用適當的 HTTP status codes
+- 501 Not Implemented: API skeleton 階段的預設回應
+- 400 Bad Request: 輸入驗證錯誤
+- 404 Not Found: 資源不存在
+- 403 Forbidden: 權限不足
+
+### 模組命名規範
+基於尖叫架構，使用動詞+名詞的業務意圖命名，每個端點一個模組：
+- `submit_commands_to_clients.py` - 提交指令給客戶端
+- `query_command_execution_status.py` - 查詢指令執行狀態
+- `list_all_sessions_for_admin.py` - 管理員列出所有 sessions
+- `upload_files_to_session.py` - 上傳檔案到 session
+- `poll_commands_from_server.py` - 客戶端輪詢指令
+
+## 驗證檢查點
+
+### API 結構檢查
+- [ ] 所有端點都包含 session_id 參數
+- [ ] HTTP methods 和路徑符合 RESTful 設計
+- [ ] 回應格式一致且有意義
+
+### Model 設計檢查
+- [ ] 所有 input/output 都使用 Pydantic models
+- [ ] Model 命名清楚表達業務意圖
+- [ ] 適當使用 Enum 和 Optional 類型
+
+### 測試整合檢查
+- [ ] BDD tests 能夠執行並因為 501 錯誤而失敗
+- [ ] 測試失敗清楚顯示 "Expected 200, got 501" 的錯誤訊息
+- [ ] 測試失敗證明 API skeleton 已正確建立
+- [ ] 測試覆蓋所有主要的 API 端點
+
+### 架構組織檢查
+- [ ] 業務邏輯不在 main.py 中
+- [ ] 每個功能模組職責單一且明確
+- [ ] 模組名稱符合尖叫架構原則
+
+## 成功標準
+
+完成 API Skeleton 後應該達到：
+- [ ] 所有 User Story 相關的 API 端點都已建立
+- [ ] API 結構正確，使用 Pydantic models
+- [ ] BDD tests 執行失敗，顯示 "Expected 200, got 501" 錯誤
+- [ ] 專案結構符合模組化和尖叫架構原則
+- [ ] 準備好進入 Red-Green-Refactor 的實作階段
+
+## 下一步驟
+完成 API Skeleton 後，進入具體的業務邏輯實作：
+1. 選擇一個 API 端點開始實作
+2. 實作最小可行的回應（可能是假資料）
+3. 讓 BDD 測試從 501 錯誤轉為業務邏輯驗證
+4. 逐步完善業務邏輯實作

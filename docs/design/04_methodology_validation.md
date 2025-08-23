@@ -58,7 +58,7 @@ AI助手
 1. **協作控制層**：AIAssistant, User
 2. **通訊協調層**：Server, Communication
 3. **執行處理層**：Client, Environment, Infrastructure  
-4. **任務管理層**：Command, ExecutionResult, ExecutionMode
+4. **任務管理層**：Command, ExecutionResult
 5. **資源管理層**：File, Session, Queue
 
 ## 方法學品質評估

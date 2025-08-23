@@ -1,0 +1,104 @@
+# User Story 到 BDD Test Walking Skeleton 轉換提示詞
+
+## 任務概述
+你需要從 User Story 建立完整的 BDD test walking skeleton，包含目錄結構、feature 檔案和所有 step 實作檔案的骨架。
+
+## 執行步驟
+
+### Step 1: 選擇和分析 User Story
+1. 從 `docs/requirements/02_user_story.md` 選擇一個待實作的 User Story
+2. 分析該 User Story 的 Acceptance Criteria
+3. 識別需要的 Given/When/Then steps
+
+### Step 2: 名稱轉換
+將 User Story 編號和描述轉換為 Python module 合法的目錄名稱：
+- 全部轉成小寫
+- 非英文及數字的字元都轉成 `_`
+- 編號中的 `-` 直接去掉
+- 例如：`US-001: Admin Session List Query` → `us001_admin_session_list_query`
+
+### Step 3: 建立目錄結構
+在 `tests/features/` 下建立：
+```
+tests/features/{story_converted_name}/
+├── __init__.py          # 空檔案
+├── story.feature        # Gherkin feature 檔案
+├── steps.py            # Step 註冊檔案
+├── given_*.py          # Given steps 實作檔案
+├── when_*.py           # When steps 實作檔案
+└── then_*.py           # Then steps 實作檔案
+```
+
+### Step 4: 建立檔案內容
+
+#### `__init__.py`
+```python
+# 空檔案，標識為 Python package
+```
+
+#### `story.feature`
+```gherkin
+Feature: [從 User Story 提取的 Feature 名稱]
+  As a [角色]
+  I want [目標]
+  So that [價值]
+
+  @skip
+  Scenario: [從 Acceptance Criteria 提取的主要情境]
+    Given [前置條件]
+    When [執行動作]
+    Then [預期結果]
+    And [額外驗證]
+```
+
+#### Individual Step 實作檔案 (例如 `given_client_is_registered.py`)
+```python
+def execute(context, *args):
+    # TODO: implement the actual step logic
+    raise NotImplementedError("Step implementation not ready yet")
+```
+
+#### `steps.py` (Step 註冊檔案)
+```python
+from pytest_bdd import given, when, then, parsers
+from . import given_*  # 根據實際檔案名稱 import
+from . import when_*   # 根據實際檔案名稱 import  
+from . import then_*   # 根據實際檔案名稱 import
+
+@given(parsers.parse('[實際的 given step 文字]'))
+def step_given_something(context, *args):
+    return given_*.execute(context, *args)
+
+@when(parsers.parse('[實際的 when step 文字]'))
+def step_when_something(context, *args):
+    return when_*.execute(context, *args)
+
+@then('[實際的 then step 文字]')
+def step_then_something(context):
+    return then_*.execute(context)
+```
+
+### Step 5: 驗證測試發現
+執行以下指令確保 pytest 可以發現新建立的測試：
+```bash
+pytest tests/features/ --collect-only
+```
+
+## 重要注意事項
+1. 所有新建立的 scenario 必須標記 `@skip`
+2. 所有 step 實作都使用 `NotImplementedError`
+3. 檔案名稱必須符合 Python module 命名規範
+4. `steps.py` 只負責註冊，實際邏輯在獨立的 step 檔案中
+5. 每個 step 實作檔案都有標準的 `execute(context, *args)` 函數
+
+## 成功標準
+完成後應該達到：
+- [ ] 目錄結構正確建立
+- [ ] `story.feature` 正確反映 User Story
+- [ ] 所有需要的 step 實作檔案都已建立
+- [ ] `steps.py` 正確註冊所有 steps
+- [ ] `pytest --collect-only` 可以發現測試
+- [ ] 所有 scenarios 標記 `@skip`
+- [ ] 所有實作使用 `NotImplementedError`
+
+完成這個 walking skeleton 後，就可以進入 TDD 的 Red-Green-Refactor 循環階段。
