@@ -88,6 +88,7 @@ class Server {
     -Map<String, ExecutionResult> results   // 結果儲存 (key: commandId)
     -Map<String, File> files                // 檔案管理 (key: fileId)
     -Map<String, Set<String>> sessionClients // Session 隔離 (key: sessionId, value: clientIds)
+    -String adminToken                      // 管理員認證令牌 (從環境變數 PUBLIC_TUNNEL_ADMIN_TOKEN 讀取)
     
     // Core HTTP API Endpoints
     +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)  // POST /api/session/{sessionId}/command
@@ -98,8 +99,33 @@ class Server {
     +HttpResponse downloadFile(String sessionId, String fileId)                                     // GET /api/session/{sessionId}/files/{fileId}
     +HttpResponse getSessionInfo(String sessionId)                                                   // GET /api/session/{sessionId}
     +HttpResponse getActiveClients(String sessionId)                                                // GET /api/session/{sessionId}/clients
+    +HttpResponse getAllSessions(String token)                                                      // GET /api/sessions (需 admin 權限)
 }
 ```
+
+#### Admin 認證機制
+
+**環境變數設定**：
+```bash
+PUBLIC_TUNNEL_ADMIN_TOKEN=your-secret-admin-token-here
+```
+
+**認證邏輯**：
+```java
+public HttpResponse getAllSessions(String token) {
+    // 簡單字串比對環境變數
+    if (!token.equals(this.adminToken)) {
+        return HttpResponse.forbidden();  // 403 Forbidden
+    }
+    return HttpResponse.ok(getAllSessionsData());  // 回傳所有 session 清單
+}
+```
+
+**設計特點**：
+- **極簡設計**：單一環境變數，無需複雜的用戶管理系統
+- **安全保障**：Token 在 Server 啟動時載入，運行期間不變動
+- **部署簡單**：透過 Docker 或系統環境變數設定
+- **權限單一**：只有一個管理員權限層級，符合極簡架構原則
 
 ### 資料結構 (Data Structures)
 
@@ -226,6 +252,7 @@ classDiagram
         -Map~String, ExecutionResult~ results
         -Map~String, File~ files
         -Map~String, Set~String~~ sessionClients
+        -String adminToken
         +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)
         +HttpResponse getNextCommand(String sessionId, String clientId)
         +HttpResponse submitResult(String sessionId, String commandId, String status, String output)
@@ -234,6 +261,7 @@ classDiagram
         +HttpResponse downloadFile(String sessionId, String fileId)
         +HttpResponse getSessionInfo(String sessionId)
         +HttpResponse getActiveClients(String sessionId)
+        +HttpResponse getAllSessions(String token)
     }
     
     class Command {
@@ -337,6 +365,7 @@ classDiagram
   - 結果查詢流程：AIAssistant → Server.getResult(commandId) → 以 commandId 為 key 取得 ExecutionResult
   - 檔案管理流程：Client/AIAssistant → Server.uploadFile()/downloadFile() → File 管理
   - Session 協作流程：Server.getActiveClients() → 多 Client 協作資訊
+  - 管理員流程：Admin → Server.getAllSessions(adminToken) → 系統全局 session 監控
 
 - [x] **關聯關係反映真實的系統架構**
   - 聚合關係準確反映 Server 的資料管理職責
@@ -416,7 +445,7 @@ classDiagram
 ### 後續應用指引
 此極簡 Server-centric OOA 設計可作為：
 - **開發藍圖**：直接指導 public-tunnel server 的程式實作
-- **API 設計**：8個 HTTP API 方法直接對應 REST endpoint 設計
+- **API 設計**：9個 HTTP API 方法直接對應 REST endpoint 設計
 - **資料庫設計**：3個資料結構直接映射為資料庫表，sessionId 作為隔離欄位
 - **測試設計**：基於 Server API 方法設計 API 測試和單元測試
 - **部署指南**：單一 Server 組件，最簡化的部署和維運
