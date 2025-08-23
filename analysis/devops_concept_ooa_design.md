@@ -19,7 +19,7 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（3個核心實作組件）：
+**最終組件設計**：
 
 | 組件名稱 | 歸屬名詞概念 | 核心職責 | 組件類型 |
 |---------|-------------|----------|----------|
@@ -41,41 +41,6 @@
 - **ExecutionMode**：執行模式、同步、非同步 → Command的屬性，不需要獨立類別
 - **Communication**：HTTP polling機制、主動polling、polling → HTTP 協定實作細節，由 Server 提供 API 終點
 
-### 微小概念剔除分析
-
-**剔除的微小概念**（21個）：
-- 調查過程 → 系統外部的使用者行為，不實作
-- 資料複製貼上 → 系統外部的使用者行為，不實作
-- Context Switch問題 → 系統外部的使用者行為，不實作
-- 人肉資料搬運工 → 系統外部的使用者行為，不實作
-- 維運工程師 → 系統外部的操作者，不實作
-- DevOps工程師 → 系統外部的操作者，不實作
-- 遠端環境 → Client運行的抽象位置，不實作
-- 本機環境 → Client運行的抽象位置，不實作
-- 生產環境 → Client運行的抽象位置，不實作
-- 環境資訊 → 由Client直接收集，不需要Environment類別
-- 基礎設施資訊 → 實體資源由Client管理，系統不需知道具體細節
-- HTTP polling機制 → Client的內部實作細節，不需要獨立類別
-- 主動polling → Client.startPolling()方法的行為
-- 執行模式選擇 → Command.mode屬性和AIAssistant的決策邏輯
-- 同步/非同步模式 → Command的屬性設定，不需要獨立類別
-
-**系統架構概念**：
-- 關鍵斷點 → 用系統架構設計表示
-- 瓶頸 → 用 Communication.isConnectionActive() 屬性表示
-- 自動化情境收集循環 → 用整體系統行為表示
-- AI建議/AI執行 → 用 ExecutionMode 類別表示
-- 長時間任務 → 用 Command.exceedsThreshold() 屬性表示
-- 存在證明 → 用 Client.startPolling() 方法表示
-- 網路斷線 → 用 Client.isConnected() 狀態表示
-- 被動協調方式 → 用 Server.isPassiveMode() 設計模式表示
-- 即時連線 → 用 Communication 配置表示
-- 過程 → 用類別間的方法調用表示
-- 設定門檻 → 用 ExecutionMode.timeoutThreshold 常數表示
-- 完全隔離 → 用 Session.isolateFromOthers() 架構設計表示
-- 唯一識別 → 用各類別的 ID 屬性表示
-
-**保留原則驗證**：所有影響 public-tunnel Server 業務邏輯、系統架構或數據結構的概念均已保留在5個核心組件中。外部角色（AI助手、Client 程式）的行為不在我們的實作範圍內。
 
 ---
 
@@ -91,18 +56,16 @@ Server (核心實作組件)
 │   ├── 指令提交 API → 建立 Command 物件
 │   ├── 結果查詢 API → 取得 ExecutionResult 物件
 │   ├── 檔案管理 API → 上傳/下載 File 物件
-│   └── Client Polling API → 分發 Queue 中的 Command
+│   └── Client Polling API → 分發儲存的 Command
 ├── 業務邏輯協調 →
-│   ├── Session 隔離管理
-│   ├── FIFO Queue 管理
+│   ├── sessionId 隔離管理 
+│   ├── FIFO 指令管理（實作細節）
 │   ├── 同步/非同步模式切換
 │   └── Client 狀態追蹤
 └── 資料結構管理 →
     ├── Command (指令資料)
     ├── ExecutionResult (結果資料)
-    ├── File (檔案資料)
-    ├── Session (會話資料)
-    └── Queue (佇列資料)
+    └── File (檔案資料)
 
 外部交互 (不在實作範圍)
 ├── AI助手 → 透過 HTTP API 使用 Server
@@ -402,7 +365,7 @@ classDiagram
   - Server 集中所有業務邏輯處理和資料管理功能
   - 每個資料結構包含完整的相關屬性和操作方法
   - ExecutionResult 包含所有執行結果相關的狀態和行為
-  - Session 包含所有會話相關的管理功能和狀態追蹤
+  - sessionId 作為字串提供資源隔離標識
 
 - [x] **可擴展性 (Extensibility)**
   - Server 的 HTTP API 設計支援新增不同類型的操作
@@ -414,8 +377,8 @@ classDiagram
 
 **核心架構模式驗證**：
 - [x] **被動協調模式**：Server 僅響應 HTTP 請求，不主動發起操作
-- [x] **FIFO 順序保證**：Queue 資料結構確保 Command 先進先出執行
-- [x] **會話隔離**：Session 資料結構提供完整的多專案/環境隔離
+- [x] **FIFO 順序保證**：Server 內部實作確保 Command 先進先出執行
+- [x] **會話隔離**：sessionId 字串標識提供完整的多專案/環境隔離
 - [x] **檔案唯一識別**：File 資料結構支援 file-id 唯一性和重複處理
 
 **業務流程完整性**：
