@@ -121,6 +121,7 @@ Server (核心實作組件)
 ```java
 class Server {
     // 核心屬性
+    -Map<String, Command> commands          // 指令儲存 (key: commandId)
     -Map<String, ExecutionResult> results   // 結果儲存 (key: commandId)
     -Map<String, File> files                // 檔案管理 (key: fileId)
     -Map<String, Set<String>> sessionClients // Session 隔離 (key: sessionId, value: clientIds)
@@ -217,6 +218,7 @@ class File {
 
 | 主類別 | 關係 | 從屬類別 | 多重性 | 關係描述 |
 |-------|------|---------|--------|----------|
+| Server | *-- | Command | 1 : * | Server 儲存多個待執行指令 |
 | Server | *-- | ExecutionResult | 1 : * | Server 儲存多個執行結果 |
 | Server | *-- | File | 1 : * | Server 管理多個檔案 |
 | ExecutionResult | *-- | File | 1 : * | 執行結果可附帶多個檔案 (透過 fileIds) |
@@ -234,6 +236,7 @@ class File {
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
+- [x] 一個 Server 可以儲存多個 Command (1:*) - 支援 getNextCommand() 查詢
 - [x] 一個 Server 可以儲存多個 ExecutionResult (1:*)
 - [x] 一個 Server 可以管理多個 File (1:*)
 - [x] ExecutionResult 可以關聯多個 File 作為附件 (1:*)
@@ -256,6 +259,7 @@ class File {
 ```mermaid
 classDiagram
     class Server {
+        -Map~String, Command~ commands
         -Map~String, ExecutionResult~ results
         -Map~String, File~ files
         -Map~String, Set~String~~ sessionClients
@@ -318,6 +322,7 @@ classDiagram
     
     
     %% 聚合關係 (has-a) - Server-centric design
+    Server "1" *-- "*" Command : stores
     Server "1" *-- "*" ExecutionResult : stores
     Server "1" *-- "*" File : manages
     ExecutionResult "1" *-- "*" File : "references via fileIds"
@@ -357,15 +362,16 @@ classDiagram
 ### 6.1 一致性檢查
 
 - [x] **所有重要業務概念都有對應組件**
-  - 4個核心組件完全涵蓋原始結構化分析中的重要概念
+  - 3個核心組件完全涵蓋原始結構化分析中的重要概念
   - Server-centric 設計聚焦於實際實作範圍
-  - Command, ExecutionResult, File, Queue 核心資料結構完整建模
+  - Command, ExecutionResult, File 核心資料結構完整建模
   - Session 簡化為 sessionId 字串，作為資源隔離標識
+  - Queue 作為實作細節，由 Server 內部管理
 
 - [x] **方法覆蓋所有關鍵業務流程**
-  - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存到 targetClient 的 Queue
-  - 指令執行流程：Client → Server.getNextCommand() → 取得 Command → 本地執行 → Server.submitResult()
-  - 結果查詢流程：AIAssistant → Server.getResult() → 取得 ExecutionResult
+  - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存並產生 commandId
+  - 指令執行流程：Client → Server.getNextCommand() → 取得 Command → 本地執行 → Server.submitResult(commandId)
+  - 結果查詢流程：AIAssistant → Server.getResult(commandId) → 以 commandId 為 key 取得 ExecutionResult
   - 檔案管理流程：Client/AIAssistant → Server.uploadFile()/downloadFile() → File 管理
   - Session 協作流程：Server.getActiveClients() → 多 Client 協作資訊
 
@@ -375,15 +381,15 @@ classDiagram
   - 多重性約束符合 Server-centric 架構需求
 
 - [x] **多重性約束符合業務規則**
-  - 1:* 關係：Server 管理多個 Session, Queue, ExecutionResult, File
-  - 邏輯關聯：Session 包含多個 File, Queue 儲存多個 Command
+  - 1:* 關係：Server 管理多個 Command, ExecutionResult, File
+  - 邏輯關聯：Command 與 ExecutionResult 透過 commandId 關聯，File 透過 fileIds 關聯
   - 所有約束都經過 Server-centric 架構驗證
 
 ### 6.2 設計品質評估
 
 - [x] **職責單一性 (Single Responsibility)**
   - Server：專注於 HTTP API 處理、業務邏輯協調、資料結構管理
-  - Command, ExecutionResult, File, Session, Queue：各自專注於特定資料結構的屬性和操作
+  - Command, ExecutionResult, File：各自專注於特定資料結構的屬性和操作
   - 每個組件都有明確且單一的核心職責
 
 - [x] **低耦合 (Low Coupling)**
