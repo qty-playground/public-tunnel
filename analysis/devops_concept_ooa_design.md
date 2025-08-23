@@ -19,25 +19,25 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（10個核心實作類別）：
+**建立分類體系**（8個核心實作類別）：
 
 | 類別名稱 | 歸屬名詞概念 | 核心職責 |
 |---------|-------------|----------|
 | **AIAssistant** | AI助手、AI大腦、AI端 | 智能分析和指令管理 |
-| **Client** | Client端、client | 遠端代理執行 |
-| **Server** | Server、中央協調系統、中央系統 | 被動協調和資源管理 |
-| **Command** | 指令、command-id | 執行指令的封裝和追蹤 |
+| **Client** | Client端、client | 遠端代理執行（包含通訊機制） |
+| **Server** | Server、中央協調系統、中央系統 | 被動協調和資源管理（包含執行模式管理） |
+| **Command** | 指令、command-id、執行模式、同步、非同步 | 執行指令的封裝和追蹤 |
 | **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的管理和狀態 |
 | **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案存儲和傳輸管理 |
 | **Session** | session、session空間、不同的session | 會話隔離和協作空間 |
 | **Queue** | command queue、FIFO command queue、專屬queue | 指令佇列和順序管理 |
-| **ExecutionMode** | 執行模式、同步、非同步 | 執行策略和模式控制 |
-| **Communication** | HTTP polling機制、主動polling、polling | 通訊協定和連線管理 |
 
 **移除的抽象概念**：
 - **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
 - **Environment**：遠端環境、本機環境、生產環境 → 抽象概念，Client啟動的運行位置，不需要實作
 - **Infrastructure**：機器、服務器、Web前端、API後端、資料庫服務器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
+- **ExecutionMode**：執行模式、同步、非同步 → Command的屬性，不需要獨立類別
+- **Communication**：HTTP polling機制、主動polling、polling → 實作細節，整合到Client/Server中
 
 ### 微小概念剔除分析
 
@@ -53,6 +53,10 @@
 - 生產環境 → Client運行的抽象位置，不實作
 - 環境資訊 → 由Client直接收集，不需要Environment類別
 - 基礎設施資訊 → 實體資源由Client管理，系統不需知道具體細節
+- HTTP polling機制 → Client的內部實作細節，不需要獨立類別
+- 主動polling → Client.startPolling()方法的行為
+- 執行模式選擇 → Command.mode屬性和AIAssistant的決策邏輯
+- 同步/非同步模式 → Command的屬性設定，不需要獨立類別
 - 關鍵斷點 → 用系統架構設計表示
 - 瓶頸 → 用 Communication.isConnectionActive() 屬性表示
 - 自動化情境收集循環 → 用整體系統行為表示
@@ -67,7 +71,7 @@
 - 完全隔離 → 用 Session.isolateFromOthers() 架構設計表示
 - 唯一識別 → 用各類別的 ID 屬性表示
 
-**保留原則驗證**：所有影響業務邏輯、系統架構或數據結構的概念均已保留在10個核心類別中。
+**保留原則驗證**：所有影響業務邏輯、系統架構或數據結構的概念均已保留在8個核心類別中。
 
 ---
 
@@ -154,16 +158,18 @@ class AIAssistant {
     // 屬性（從關係推導）
     -String assistantId
     -List<String> capabilities
-    -ExecutionMode currentMode
-    -boolean canDirectAccess
+    -String authToken
     
     // 方法（從動詞轉換）
-    +Command createCommand(String content, String targetClient)    // 創建指令
-    +ExecutionMode selectExecutionMode(Command command)           // 選擇執行模式
-    +ExecutionResult trackExecution(String commandId)             // 追蹤執行
-    +File manageFile(String fileId, String operation)             // 管理檔案
-    +Session manageSession(String sessionId)                      // 管理會話
-    +void submitToServer(Server server, Command command)          // 提交指令
+    +Command createCommand(String content, String targetClient, String mode)  // 創建指令並指定模式
+    +String selectExecutionMode(Command command)                             // 選擇執行模式（sync/async）
+    +ExecutionResult trackExecution(String commandId)                        // 追蹤執行
+    +File manageFile(String fileId, String operation)                        // 管理檔案
+    +Session manageSession(String sessionId)                                 // 管理會話
+    +void submitToServer(Server server, Command command)                     // 提交指令
+    +List<Client> getAvailableClients(Session session)                       // 獲取可用客戶端
+    +boolean canExecuteRemotely()                                            // 遠端執行能力檢查
+    +boolean hasAdminAccess()                                                // 管理員權限檢查
 }
 ```
 
@@ -175,19 +181,21 @@ class Client {
     -String sessionId
     -Queue commandQueue
     -boolean isOnline
-    -Communication communication
     -long lastHeartbeat
+    -String serverUrl
+    -int pollingInterval
     
     // 方法（從動詞轉換）
-    +void startPolling(Server server)                        // 開始 polling
+    +void startPolling(Server server)                        // 開始 HTTP polling 循環
     +Command retrieveCommand()                               // 從佇列取得指令
     +ExecutionResult executeCommand(Command command)         // 在本地環境執行指令
     +void reportResult(ExecutionResult result, Server server) // 回報結果
     +void handleFileOperation(File file, String operation)   // 檔案操作
-    +void reconnectOnFailure()                               // 重新連線
+    +void reconnectOnFailure()                               // 網路斷線重連
     +boolean isConnected()                                   // 連線狀態檢查
     +void collaborateInSession(Session session)              // 會話協作
-    +void sendHeartbeat()                                    // 發送心跳
+    +void sendHeartbeat()                                    // 發送心跳（存在證明）
+    +void updatePresence()                                   // 更新存在狀態
 }
 ```
 
