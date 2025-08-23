@@ -19,7 +19,7 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（4個核心實作組件）：
+**建立分類體系**（3個核心實作組件）：
 
 | 組件名稱 | 歸屬名詞概念 | 核心職責 | 組件類型 |
 |---------|-------------|----------|----------|
@@ -27,10 +27,10 @@
 | **Command** | 指令、command-id、執行模式、同步、非同步 | 指令的資料結構和狀態管理 | 資料結構 |
 | **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的資料結構 | 資料結構 |
 | **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案元數據和存儲管理 | 資料結構 |
-| **Queue** | command queue、FIFO command queue、專屬queue | FIFO指令佇列管理 | 資料結構 |
 
-**簡化的會話管理**：
+**簡化的實作細節**：
 - **Session** → sessionId (字串) - 作為 Client 的屬性，用於資源隔離
+- **Queue** → 實作細節 - Server 內部如何管理待執行指令 (可用陣列、佇列、資料庫等)
 
 **移除的外部角色和抽象概念**：
 - **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
@@ -121,7 +121,6 @@ Server (核心實作組件)
 ```java
 class Server {
     // 核心屬性
-    -Map<String, Queue> clientQueues        // Client 佇列管理 (key: clientId)
     -Map<String, ExecutionResult> results   // 結果儲存 (key: commandId)
     -Map<String, File> files                // 檔案管理 (key: fileId)
     -Map<String, Set<String>> sessionClients // Session 隔離 (key: sessionId, value: clientIds)
@@ -206,27 +205,6 @@ class File {
 ```
 
 
-#### Queue (佇列資料)
-```java
-class Queue {
-    // 核心屬性
-    -String queueId             // 佇列唯一ID (通常為 clientId)
-    -LinkedList<Command> commands // FIFO 指令佇列
-    -String ownerId             // 佇列擁有者 (clientId)
-    -int maxSize                // 最大佇列長度
-    -long lastAccessTime        // 最後存取時間
-    
-    // 資料操作
-    +void enqueue(Command command)            // 加入佇列
-    +Command dequeue()                        // 取出指令
-    +Command peek()                           // 查看下一個指令
-    +boolean isEmpty()                        // 空佇列檢查
-    +boolean isFull()                         // 滿佇列檢查
-    +int getSize()                            // 取得佇列長度
-    +void clear()                             // 清空佇列
-    +List<String> getCommandIds()             // 取得所有指令ID
-}
-```
 
 
 
@@ -239,10 +217,8 @@ class Queue {
 
 | 主類別 | 關係 | 從屬類別 | 多重性 | 關係描述 |
 |-------|------|---------|--------|----------|
-| Server | *-- | Queue | 1 : * | Server 管理多個 Client 專屬佇列 |
 | Server | *-- | ExecutionResult | 1 : * | Server 儲存多個執行結果 |
 | Server | *-- | File | 1 : * | Server 管理多個檔案 |
-| Queue | *-- | Command | 1 : * | Queue 儲存多個指令 |
 | ExecutionResult | *-- | File | 1 : * | 執行結果可附帶多個檔案 (透過 fileIds) |
 
 ### 依賴關係 (uses, ..>)
@@ -252,28 +228,26 @@ class Queue {
 | Server | ..> | Command | Server 創建和管理 Command 物件 |
 | Server | ..> | ExecutionResult | Server 創建和儲存 ExecutionResult 物件 |
 | Server | ..> | File | Server 創建和管理 File 物件 |
-| Server | ..> | Queue | Server 創建和管理 Queue 物件 |
 | Command | ..> | ExecutionResult | Command 執行後產生 ExecutionResult |
 | ExecutionResult | ..> | File | ExecutionResult 可關聯多個 File (透過 fileIds) |
 
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
-- [x] 一個 Server 可以管理多個 Client 專屬的 Queue (1:*)
-- [x] 每個 Queue 儲存多個 Command，由 Server 統一管理 (1:*)
+- [x] 一個 Server 可以儲存多個 ExecutionResult (1:*)
+- [x] 一個 Server 可以管理多個 File (1:*)
 - [x] ExecutionResult 可以關聯多個 File 作為附件 (1:*)
 
 **數據一致性驗證**：
 - [x] Command 與 ExecutionResult 通過 commandId 建立關聯
 - [x] File 與 Command 通過 sessionId 實現邏輯隔離
-- [x] Queue 與 Client 通過 queueId (clientId) 建立關聯
 - [x] ExecutionResult 與 File 通過 fileIds 陣列建立關聯
 
 **生命週期匹配性**：
 - [x] Server 控制所有資料結構的生命週期
 - [x] sessionId 作為字串屬性，用於跨資料結構的資源隔離
-- [x] Queue 的生命週期與對應 Client 的存在一致
 - [x] ExecutionResult 的生命週期獨立於 Command (用於歷史查詢)
+- [x] 指令佇列管理留給實作時決定 (可用記憶體、資料庫、訊息佇列等)
 
 ---
 
@@ -282,7 +256,6 @@ class Queue {
 ```mermaid
 classDiagram
     class Server {
-        -Map~String, Queue~ clientQueues
         -Map~String, ExecutionResult~ results
         -Map~String, File~ files
         -Map~String, Set~String~~ sessionClients
@@ -344,34 +317,15 @@ classDiagram
     }
     
     
-    class Queue {
-        -String queueId
-        -LinkedList~Command~ commands
-        -String ownerId
-        -int maxSize
-        -long lastAccessTime
-        +void enqueue(Command command)
-        +Command dequeue()
-        +Command peek()
-        +boolean isEmpty()
-        +boolean isFull()
-        +int getSize()
-        +void clear()
-        +List~String~ getCommandIds()
-    }
-    
     %% 聚合關係 (has-a) - Server-centric design
-    Server "1" *-- "*" Queue : manages
     Server "1" *-- "*" ExecutionResult : stores
     Server "1" *-- "*" File : manages
-    Queue "1" *-- "*" Command : stores
     ExecutionResult "1" *-- "*" File : "references via fileIds"
     
     %% 依賴關係 (uses) - Server-centric design
     Server ..> Command : "creates manages"
     Server ..> ExecutionResult : "creates stores"
     Server ..> File : "creates manages"
-    Server ..> Queue : "creates manages"
     Command ..> ExecutionResult : "produces when executed"
     ExecutionResult ..> File : "references via fileIds"
     
