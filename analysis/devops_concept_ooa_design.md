@@ -109,249 +109,160 @@ Server (核心實作組件)
 
 ---
 
-## Step 3: 獨立類別設計
+## Step 3: Server-centric 類別設計
 
-### User (使用者)
-```java
-class User {
-    // 屬性（從關係推導）
-    -String userId
-    -String role
-    -List<Environment> environments
-    -boolean hasContextSwitchProblem
-    
-    // 方法（從動詞轉換）
-    +void faceProblems(Infrastructure infrastructure)     // 面對問題
-    +void checkServers(List<Infrastructure> servers)      // 檢查服務器
-    +void analyzeProblems(AIAssistant assistant)          // 分析問題
-    +void executeCorrections(List<Command> commands)      // 執行修正
-    +void switchEnvironments(Environment from, Environment to) // 切換環境
-    +boolean hasContextSwitchProblem()                    // 狀態檢查
-    +void collaborateWith(AIAssistant assistant)          // 協作
-}
-```
+基於系統邊界重新定義，本系統實作範圍聚焦於 Server 端服務，AIAssistant 和 Client 為外部消費者。
 
-### AIAssistant (AI助手)
-```java
-class AIAssistant {
-    // 屬性（從關係推導）
-    -String assistantId
-    -List<String> capabilities
-    -String authToken
-    
-    // 方法（從動詞轉換）
-    +Command createCommand(String content, String targetClient, String mode)  // 創建指令並指定模式
-    +String selectExecutionMode(Command command)                             // 選擇執行模式（sync/async）
-    +ExecutionResult trackExecution(String commandId)                        // 追蹤執行
-    +File manageFile(String fileId, String operation)                        // 管理檔案
-    +Session manageSession(String sessionId)                                 // 管理會話
-    +void submitToServer(Server server, Command command)                     // 提交指令
-    +List<Client> getAvailableClients(Session session)                       // 獲取可用客戶端
-    +boolean canExecuteRemotely()                                            // 遠端執行能力檢查
-    +boolean hasAdminAccess()                                                // 管理員權限檢查
-}
-```
+### 實作組件 (Implementation Component)
 
-### Client (客戶端)
-```java
-class Client {
-    // 屬性（從關係推導）
-    -String clientId
-    -String sessionId
-    -Queue commandQueue
-    -boolean isOnline
-    -long lastHeartbeat
-    -String serverUrl
-    -int pollingInterval
-    
-    // 方法（從動詞轉換）
-    +void startPolling(Server server)                        // 開始 HTTP polling 循環
-    +Command retrieveCommand()                               // 從佇列取得指令
-    +ExecutionResult executeCommand(Command command)         // 在本地環境執行指令
-    +void reportResult(ExecutionResult result, Server server) // 回報結果
-    +void handleFileOperation(File file, String operation)   // 檔案操作
-    +void reconnectOnFailure()                               // 網路斷線重連
-    +boolean isConnected()                                   // 連線狀態檢查
-    +void collaborateInSession(Session session)              // 會話協作
-    +void sendHeartbeat()                                    // 發送心跳（存在證明）
-    +void updatePresence()                                   // 更新存在狀態
-}
-```
-
-### Server (伺服器)
+#### Server (核心服務器)
 ```java
 class Server {
-    // 屬性（從關係推導）
-    -String serverId
-    -Map<String, Session> sessions
-    -Map<String, Queue> clientQueues
-    -Communication communicationMode
-    -boolean passiveMode
+    // 核心屬性
+    -Map<String, Session> sessions          // Session 管理
+    -Map<String, Queue> clientQueues        // Client 佇列管理
+    -Map<String, ExecutionResult> results   // 結果儲存
+    -Map<String, File> files                // 檔案管理
+    -boolean passiveMode                     // 被動協調模式
     
-    // 方法（從動詞轉換）
-    +Session createSession(String sessionId)                          // 創建會話
-    +void isolateSession(Session session)                             // 隔離會話
-    +void distributeCommand(Command command, String targetClient)     // 分發指令
-    +ExecutionResult storeResult(String commandId, ExecutionResult result) // 儲存結果
-    +File manageSessionFile(String sessionId, String fileId)          // 管理會話檔案
-    +void maintainFIFOOrder(Queue queue)                             // 維護 FIFO 順序
-    +boolean isPassiveMode()                                          // 被動模式檢查
-    +void respondToRequest(Object request)                            // 響應請求
+    // HTTP API 處理器
+    +HttpResponse handleCommandSubmit(HttpRequest request)    // 指令提交 API
+    +HttpResponse handleResultQuery(String commandId)        // 結果查詢 API
+    +HttpResponse handleFileUpload(HttpRequest request)      // 檔案上傳 API
+    +HttpResponse handleFileDownload(String fileId)         // 檔案下載 API
+    +HttpResponse handleClientPolling(String clientId)      // Client Polling API
+    +HttpResponse handleSessionQuery(String sessionId)      // Session 查詢 API
+    
+    // 業務邏輯協調
+    +Session createOrGetSession(String sessionId)           // Session 建立/取得
+    +void isolateSession(String sessionId)                  // Session 隔離
+    +void distributeCommand(Command command)                // 指令分發到 Queue
+    +ExecutionResult storeExecutionResult(String commandId, ExecutionResult result) // 結果儲存
+    +boolean determineExecutionMode(Command command)        // 執行模式判斷
+    +void trackClientPresence(String clientId)              // Client 狀態追蹤
+    +void maintainFIFOOrder(String clientId)               // FIFO 佇列維護
+    
+    // 資料結構管理
+    +Command createCommand(String content, String targetClient, String mode) // Command 建立
+    +File storeFile(String sessionId, String fileName, byte[] content) // File 儲存
+    +Queue getOrCreateQueue(String clientId)                // Queue 建立/取得
+    +void cleanupExpiredSessions()                          // Session 清理
 }
 ```
 
-### Command (指令)
+### 資料結構 (Data Structures)
+
+#### Command (指令資料)
 ```java
 class Command {
-    // 屬性（從關係推導）
-    -String commandId
-    -String content
-    -String targetClient
-    -ExecutionMode mode
-    -long timestamp
-    -long executionTime
+    // 核心屬性
+    -String commandId           // 指令唯一識別
+    -String content             // 指令內容
+    -String targetClient        // 目標 Client
+    -String mode                // 執行模式 (sync/async)
+    -long timestamp             // 建立時間
+    -String sessionId          // 所屬 Session
     
-    // 方法（從動詞轉換）
-    +boolean isSync()                                    // 同步模式檢查
-    +boolean isAsync()                                   // 非同步模式檢查
-    +void switchToAsync()                                // 切換到非同步
-    +String getTargetClient()                            // 取得目標客戶端
-    +boolean exceedsThreshold(long threshold)            // 超過門檻檢查
-    +ExecutionResult execute()                              // 執行指令
-    +void submitTo(Server server)                        // 提交到服務器
+    // 資料操作
+    +boolean isSync()                          // 同步模式檢查
+    +boolean isAsync()                         // 非同步模式檢查
+    +String getTargetClient()                  // 取得目標 Client
+    +long getAge()                             // 取得指令年齡
+    +String toJson()                           // 序列化為 JSON
+    +Command fromJson(String json)             // 從 JSON 反序列化
 }
 ```
 
-### ExecutionResult (執行結果)
+#### ExecutionResult (執行結果資料)
 ```java
 class ExecutionResult {
-    // 屬性（從關係推導）
-    -String commandId
-    -String status
-    -String content
-    -List<File> attachedFiles
-    -long executionTime
-    -boolean isError
+    // 核心屬性
+    -String commandId           // 對應指令ID
+    -String status              // 執行狀態
+    -String content             // 結果內容
+    -List<String> fileIds       // 附件檔案ID列表
+    -long executionTime         // 執行時間
+    -boolean isError            // 錯誤標記
+    -String errorMessage        // 錯誤訊息
     
-    // 方法（從動詞轉換）
-    +boolean isCompleted()                    // 完成狀態檢查
-    +boolean isSuccess()                      // 成功狀態檢查
-    +boolean isError()                        // 錯誤狀態檢查
-    +List<File> getFiles()                    // 取得附件檔案
-    +String getSummary()                      // 取得摘要
-    +boolean isComplex()                      // 複雜結果檢查
-    +void reportTo(Server server)             // 回報到服務器
+    // 資料操作
+    +boolean isCompleted()                     // 完成狀態檢查
+    +boolean isSuccess()                       // 成功狀態檢查
+    +boolean hasFiles()                        // 是否有附件
+    +String getSummary()                       // 取得結果摘要
+    +String toJson()                           // 序列化為 JSON
+    +ExecutionResult fromJson(String json)     // 從 JSON 反序列化
 }
 ```
 
-### File (檔案)
+#### File (檔案資料)
 ```java
 class File {
-    // 屬性（從關係推導）
-    -String fileId
-    -String fileName
-    -String summary
-    -byte[] content
-    -String sessionId
-    -boolean isDuplicate
+    // 核心屬性
+    -String fileId              // 檔案唯一ID
+    -String fileName            // 檔案名稱
+    -String summary             // 檔案摘要
+    -byte[] content             // 檔案內容
+    -String sessionId          // 所屬 Session
+    -long createdTime           // 建立時間
+    -String contentType         // 檔案類型
     
-    // 方法（從動詞轉換）
-    +String getUniqueId()                           // 取得唯一ID
-    +String getSummary()                            // 取得摘要
-    +boolean isDuplicate(String fileName)           // 重複檢查
-    +void upload(byte[] content)                    // 上傳
-    +byte[] download()                              // 下載
-    +boolean belongsToSession(String sessionId)     // 會話歸屬檢查
-    +void managedBy(AIAssistant assistant)          // 被AI助手管理
+    // 資料操作
+    +String getUniqueId()                      // 取得唯一ID
+    +String getSummary()                       // 取得摘要
+    +long getSize()                            // 取得檔案大小
+    +boolean belongsToSession(String sessionId) // Session 歸屬檢查
+    +String generateSummary()                  // 自動生成摘要
+    +String toJson()                           // 序列化為 JSON (不含 content)
 }
 ```
 
-### Session (會話)
+#### Session (會話資料)
 ```java
 class Session {
-    // 屬性（從關係推導）
-    -String sessionId
-    -List<String> clientIds
-    -Map<String, File> files
-    -boolean isolated
-    -boolean supportsCollaboration
+    // 核心屬性
+    -String sessionId           // Session 唯一ID
+    -Set<String> activeClients   // 活躍 Client 列表
+    -Map<String, Long> clientLastSeen // Client 最後活躍時間
+    -Map<String, String> sessionFiles // Session 內檔案
+    -long createdTime           // Session 建立時間
+    -boolean isolated           // 隔離標記
     
-    // 方法（從動詞轉換）
-    +void addClient(String clientId)              // 添加客戶端
-    +void removeClient(String clientId)           // 移除客戶端
-    +boolean isClientAllowed(String clientId)     // 客戶端權限檢查
-    +void isolateFromOthers()                     // 從其他會話隔離
-    +File storeFile(File file)                    // 儲存檔案
-    +List<String> getActiveClients()              // 取得活躍客戶端
-    +boolean supportsCollaboration()              // 協作支援檢查
-    +void managedBy(Server server)                // 被服務器管理
+    // 資料操作
+    +void addClient(String clientId)          // 添加 Client
+    +void removeClient(String clientId)       // 移除 Client
+    +boolean isClientActive(String clientId)  // Client 活躍檢查
+    +List<String> getActiveClients()          // 取得活躍 Client 列表
+    +void updateClientPresence(String clientId) // 更新 Client 存在狀態
+    +boolean isExpired(long timeoutMs)        // Session 過期檢查
+    +String toJson()                          // 序列化為 JSON
 }
 ```
 
-### Queue (佇列)
+#### Queue (佇列資料)
 ```java
 class Queue {
-    // 屬性（從關係推導）
-    -String queueId
-    -LinkedList<Command> commands
-    -String ownerId
-    -boolean fifoOrder
-    -int maxSize
+    // 核心屬性
+    -String queueId             // 佇列唯一ID (通常為 clientId)
+    -LinkedList<Command> commands // FIFO 指令佇列
+    -String ownerId             // 佇列擁有者 (clientId)
+    -int maxSize                // 最大佇列長度
+    -long lastAccessTime        // 最後存取時間
     
-    // 方法（從動詞轉換）
-    +void enqueue(Command command)                // 入隊
-    +Command dequeue()                            // 出隊
-    +boolean isEmpty()                            // 空佇列檢查
-    +void maintainFIFO()                         // 維護 FIFO 順序
-    +int getSize()                               // 取得佇列大小
-    +boolean belongsToClient(String clientId)    // 客戶端歸屬檢查
-    +void maintainedBy(Server server)            // 被服務器維護
+    // 資料操作
+    +void enqueue(Command command)            // 加入佇列
+    +Command dequeue()                        // 取出指令
+    +Command peek()                           // 查看下一個指令
+    +boolean isEmpty()                        // 空佇列檢查
+    +boolean isFull()                         // 滿佇列檢查
+    +int getSize()                            // 取得佇列長度
+    +void clear()                             // 清空佇列
+    +List<String> getCommandIds()             // 取得所有指令ID
 }
 ```
 
 
 
-### ExecutionMode (執行模式)
-```java
-class ExecutionMode {
-    // 屬性（從關係推導）
-    -String modeName
-    -long timeoutThreshold
-    -boolean autoSwitch
-    -boolean isSync
-    -boolean isAsync
-    
-    // 方法（從動詞轉換）
-    +boolean isSync()                                        // 同步模式檢查
-    +boolean isAsync()                                       // 非同步模式檢查
-    +boolean shouldAutoSwitch(long executionTime)            // 自動切換判斷
-    +String determineMode(Command command)                   // 決定執行模式
-    +void configureThreshold(long threshold)                 // 配置門檻
-    +void selectedBy(AIAssistant assistant)                  // 被AI助手選擇
-}
-```
-
-### Communication (通訊)
-```java
-class Communication {
-    // 屬性（從關係推導）
-    -String protocol
-    -int pollingInterval
-    -boolean isPollingBased
-    -boolean isConnectionActive
-    -boolean supportsPassiveMode
-    
-    // 方法（從動詞轉換）
-    +void startPolling()                          // 開始 polling
-    +void stopPolling()                           // 停止 polling
-    +boolean isConnectionActive()                 // 連線活躍檢查
-    +void handleDisconnection()                   // 處理斷線
-    +void sendHeartbeat()                         // 發送心跳
-    +boolean supportsPassiveMode()                // 被動模式支援檢查
-    +void usedBy(Client client)                   // 被客戶端使用
-    +void usedBy(Server server)                   // 被服務器使用
-}
-```
 
 ---
 
@@ -361,43 +272,46 @@ class Communication {
 
 | 主類別 | 關係 | 從屬類別 | 多重性 | 關係描述 |
 |-------|------|---------|--------|----------|
-| AIAssistant | *-- | ExecutionMode | 1 : 1 | AI助手持有當前執行模式 |
-| Client | *-- | Queue | 1 : 1 | 客戶端擁有專屬指令佇列 |
-| Server | *-- | Session | 1 : * | 伺服器管理多個會話 |
-| Session | *-- | File | 1 : * | 會話包含多個檔案 |
-| Queue | *-- | Command | 1 : * | 佇列儲存多個指令 |
-| ExecutionResult | *-- | File | 1 : * | 執行結果包含附件檔案 |
+| Server | *-- | Session | 1 : * | Server 管理多個 Session |
+| Server | *-- | Queue | 1 : * | Server 管理多個 Client 專屬佇列 |
+| Server | *-- | ExecutionResult | 1 : * | Server 儲存多個執行結果 |
+| Server | *-- | File | 1 : * | Server 管理多個檔案 |
+| Session | *-- | File | 1 : * | Session 包含多個檔案 (邏輯歸屬) |
+| Queue | *-- | Command | 1 : * | Queue 儲存多個指令 |
+| ExecutionResult | *-- | File | 1 : * | 執行結果可附帶多個檔案 (透過 fileIds) |
 
 ### 依賴關係 (uses, ..>)
 
 | 使用者類別 | 關係 | 被使用類別 | 依賴描述 |
 |-----------|------|------------|----------|
-| AIAssistant | ..> | Server | AI助手使用伺服器提交指令 |
-| Client | ..> | Server | 客戶端使用伺服器進行polling |
-| AIAssistant | ..> | Command | AI助手創建和管理指令 |
-| Client | ..> | Command | 客戶端執行指令 |
-| Command | ..> | ExecutionResult | 指令執行產生結果 |
-| Server | ..> | Communication | 伺服器使用通訊協定 |
-| Client | ..> | Communication | 客戶端使用通訊協定 |
-| ExecutionResult | ..> | Server | 執行結果回報到伺服器 |
-| File | ..> | AIAssistant | 檔案被AI助手管理 |
+| Server | ..> | Command | Server 創建和管理 Command 物件 |
+| Server | ..> | ExecutionResult | Server 創建和儲存 ExecutionResult 物件 |
+| Server | ..> | File | Server 創建和管理 File 物件 |
+| Server | ..> | Session | Server 創建和管理 Session 物件 |
+| Server | ..> | Queue | Server 創建和管理 Queue 物件 |
+| Command | ..> | ExecutionResult | Command 執行後產生 ExecutionResult |
+| ExecutionResult | ..> | File | ExecutionResult 可關聯多個 File (透過 fileIds) |
+| File | ..> | Session | File 歸屬於特定 Session (透過 sessionId) |
+| Command | ..> | Session | Command 歸屬於特定 Session (透過 sessionId) |
 
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
-- [x] 一個AI助手在同一時間只能有一個執行模式 (1:1)
-- [x] 每個客戶端有自己專屬的指令佇列 (1:1)
-- [x] 一個伺服器可以管理多個隔離的會話 (1:*)
+- [x] 一個 Server 可以管理多個隔離的 Session (1:*)
+- [x] 每個 Client 有自己專屬的 Queue，由 Server 管理 (1:*)
+- [x] 一個 Session 可以包含多個 File，由 Server 統一管理 (1:*)
 
 **數據一致性驗證**：
-- [x] 指令與執行結果通過 commandId 建立關聯
-- [x] 檔案與會話通過 sessionId 建立關聯
-- [x] 客戶端與佇列通過 ownerId 建立關聯
+- [x] Command 與 ExecutionResult 通過 commandId 建立關聯
+- [x] File 與 Session 通過 sessionId 建立關聯
+- [x] Queue 與 Client 通過 queueId (clientId) 建立關聯
+- [x] ExecutionResult 與 File 通過 fileIds 陣列建立關聯
 
 **生命週期匹配性**：
-- [x] Session 的生命週期包含其內部的 File
-- [x] Queue 的生命週期與其 Client 一致
-- [x] ExecutionResult 的生命週期獨立於 Command
+- [x] Server 控制所有資料結構的生命週期
+- [x] Session 的生命週期包含其邏輯關聯的 File
+- [x] Queue 的生命週期與對應 Client 的存在一致
+- [x] ExecutionResult 的生命週期獨立於 Command (用於歷史查詢)
 
 ---
 
@@ -405,84 +319,60 @@ class Communication {
 
 ```mermaid
 classDiagram
-    class AIAssistant {
-        -String assistantId
-        -List~String~ capabilities
-        -ExecutionMode currentMode
-        +Command createCommand(String content, String targetClient)
-        +ExecutionMode selectExecutionMode(Command command)
-        +ExecutionResult trackExecution(String commandId)
-        +File manageFile(String fileId, String operation)
-        +Session manageSession(String sessionId)
-        +void submitToServer(Server server, Command command)
-        +List~Client~ getAvailableClients(Session session)
-        +boolean canExecuteRemotely()
-    }
-    
-    class Client {
-        -String clientId
-        -String sessionId
-        -Queue commandQueue
-        -boolean isOnline
-        -Communication communication
-        -long lastHeartbeat
-        +void startPolling(Server server)
-        +Command retrieveCommand()
-        +ExecutionResult executeCommand(Command command)
-        +void reportResult(ExecutionResult result, Server server)
-        +void handleFileOperation(File file, String operation)
-        +void reconnectOnFailure()
-        +boolean isConnected()
-        +void collaborateInSession(Session session)
-        +void sendHeartbeat()
-    }
-    
     class Server {
-        -String serverId
         -Map~String, Session~ sessions
         -Map~String, Queue~ clientQueues
-        -Communication communicationMode
+        -Map~String, ExecutionResult~ results
+        -Map~String, File~ files
         -boolean passiveMode
-        +Session createSession(String sessionId)
-        +void isolateSession(Session session)
-        +void distributeCommand(Command command, String targetClient)
-        +ExecutionResult storeResult(String commandId, ExecutionResult result)
-        +File manageSessionFile(String sessionId, String fileId)
-        +void maintainFIFOOrder(Queue queue)
-        +boolean isPassiveMode()
-        +void respondToRequest(Object request)
+        +HttpResponse handleCommandSubmit(HttpRequest request)
+        +HttpResponse handleResultQuery(String commandId)
+        +HttpResponse handleFileUpload(HttpRequest request)
+        +HttpResponse handleFileDownload(String fileId)
+        +HttpResponse handleClientPolling(String clientId)
+        +HttpResponse handleSessionQuery(String sessionId)
+        +Session createOrGetSession(String sessionId)
+        +void isolateSession(String sessionId)
+        +void distributeCommand(Command command)
+        +ExecutionResult storeExecutionResult(String commandId, ExecutionResult result)
+        +boolean determineExecutionMode(Command command)
+        +void trackClientPresence(String clientId)
+        +void maintainFIFOOrder(String clientId)
+        +Command createCommand(String content, String targetClient, String mode)
+        +File storeFile(String sessionId, String fileName, byte[] content)
+        +Queue getOrCreateQueue(String clientId)
+        +void cleanupExpiredSessions()
     }
     
     class Command {
         -String commandId
         -String content
         -String targetClient
-        -ExecutionMode mode
+        -String mode
         -long timestamp
-        -long executionTime
+        -String sessionId
         +boolean isSync()
         +boolean isAsync()
-        +void switchToAsync()
         +String getTargetClient()
-        +boolean exceedsThreshold(long threshold)
-        +ExecutionResult execute()
-        +void submitTo(Server server)
+        +long getAge()
+        +String toJson()
+        +Command fromJson(String json)
     }
     
     class ExecutionResult {
         -String commandId
         -String status
         -String content
-        -List~File~ attachedFiles
+        -List~String~ fileIds
         -long executionTime
         -boolean isError
+        -String errorMessage
         +boolean isCompleted()
         +boolean isSuccess()
-        +boolean isError()
-        +List~File~ getFiles()
+        +boolean hasFiles()
         +String getSummary()
-        +boolean isComplex()
-        +void reportTo(Server server)
+        +String toJson()
+        +ExecutionResult fromJson(String json)
     }
     
     class File {
@@ -491,96 +381,83 @@ classDiagram
         -String summary
         -byte[] content
         -String sessionId
-        -boolean isDuplicate
+        -long createdTime
+        -String contentType
         +String getUniqueId()
         +String getSummary()
-        +boolean isDuplicate(String fileName)
-        +void upload(byte[] content)
-        +byte[] download()
+        +long getSize()
         +boolean belongsToSession(String sessionId)
-        +void managedBy(AIAssistant assistant)
+        +String generateSummary()
+        +String toJson()
     }
     
     class Session {
         -String sessionId
-        -List~String~ clientIds
-        -Map~String, File~ files
+        -Set~String~ activeClients
+        -Map~String, Long~ clientLastSeen
+        -Map~String, String~ sessionFiles
+        -long createdTime
         -boolean isolated
-        -boolean supportsCollaboration
         +void addClient(String clientId)
         +void removeClient(String clientId)
-        +boolean isClientAllowed(String clientId)
-        +void isolateFromOthers()
-        +File storeFile(File file)
+        +boolean isClientActive(String clientId)
         +List~String~ getActiveClients()
-        +boolean supportsCollaboration()
-        +void managedBy(Server server)
+        +void updateClientPresence(String clientId)
+        +boolean isExpired(long timeoutMs)
+        +String toJson()
     }
     
     class Queue {
         -String queueId
         -LinkedList~Command~ commands
         -String ownerId
-        -boolean fifoOrder
         -int maxSize
+        -long lastAccessTime
         +void enqueue(Command command)
         +Command dequeue()
+        +Command peek()
         +boolean isEmpty()
-        +void maintainFIFO()
+        +boolean isFull()
         +int getSize()
-        +boolean belongsToClient(String clientId)
-        +void maintainedBy(Server server)
+        +void clear()
+        +List~String~ getCommandIds()
     }
     
-    
-    class ExecutionMode {
-        -String modeName
-        -long timeoutThreshold
-        -boolean autoSwitch
-        -boolean isSync
-        -boolean isAsync
-        +boolean isSync()
-        +boolean isAsync()
-        +boolean shouldAutoSwitch(long executionTime)
-        +String determineMode(Command command)
-        +void configureThreshold(long threshold)
-        +void selectedBy(AIAssistant assistant)
-    }
-    
-    class Communication {
-        -String protocol
-        -int pollingInterval
-        -boolean isPollingBased
-        -boolean isConnectionActive
-        -boolean supportsPassiveMode
-        +void startPolling()
-        +void stopPolling()
-        +boolean isConnectionActive()
-        +void handleDisconnection()
-        +void sendHeartbeat()
-        +boolean supportsPassiveMode()
-        +void usedBy(Client client)
-        +void usedBy(Server server)
-    }
-    
-    %% 聚合關係 (has-a)
-    AIAssistant "1" *-- "1" ExecutionMode : uses
-    Client "1" *-- "1" Queue : owns
+    %% 聚合關係 (has-a) - Server-centric design
     Server "1" *-- "*" Session : manages
-    Session "1" *-- "*" File : contains
+    Server "1" *-- "*" Queue : manages
+    Server "1" *-- "*" ExecutionResult : stores
+    Server "1" *-- "*" File : manages
+    Session "1" *-- "*" File : contains_logically
     Queue "1" *-- "*" Command : stores
-    ExecutionResult "1" *-- "*" File : includes
+    ExecutionResult "1" *-- "*" File : references_via_fileIds
     
-    %% 依賴關係 (uses)
-    AIAssistant ..> Server : submits_commands
-    Client ..> Server : polls
-    AIAssistant ..> Command : creates
-    Client ..> Command : executes
-    Command ..> ExecutionResult : produces
-    Server ..> Communication : uses
-    Client ..> Communication : uses
-    ExecutionResult ..> Server : reports_to
-    File ..> AIAssistant : managed_by
+    %% 依賴關係 (uses) - Server-centric design
+    Server ..> Command : creates_manages
+    Server ..> ExecutionResult : creates_stores
+    Server ..> File : creates_manages
+    Server ..> Session : creates_manages
+    Server ..> Queue : creates_manages
+    Command ..> ExecutionResult : produces_when_executed
+    ExecutionResult ..> File : references_via_fileIds
+    File ..> Session : belongs_to_via_sessionId
+    Command ..> Session : belongs_to_via_sessionId
+    
+    %% External consumers (not implemented in this system)
+    class AIAssistant["AIAssistant<br/>(External Consumer)"] {
+        <<external>>
+        +HTTP API calls to Server
+    }
+    
+    class Client["Client<br/>(External Consumer)"] {
+        <<external>>
+        +HTTP polling to Server
+        +Command execution locally
+    }
+    
+    %% External API relationships
+    AIAssistant -.-> Server : HTTP_API_calls
+    Client -.-> Server : HTTP_polling
 ```
 
 ---
@@ -589,88 +466,98 @@ classDiagram
 
 ### 6.1 一致性檢查
 
-- [x] **所有重要業務概念都有對應類別**
-  - 13個核心類別完全涵蓋原始結構化分析中的重要概念
-  - User, AIAssistant, Client, Server 三角協作模式完整實現
-  - Command, ExecutionResult, File 核心業務對象完整建模
+- [x] **所有重要業務概念都有對應組件**
+  - 5個核心組件完全涵蓋原始結構化分析中的重要概念
+  - Server-centric 設計聚焦於實際實作範圍
+  - Command, ExecutionResult, File, Session, Queue 核心資料結構完整建模
 
 - [x] **方法覆蓋所有關鍵業務流程**
-  - 指令創建到執行的完整流程：AIAssistant.createCommand() → Server.distributeCommand() → Client.executeCommand() → ExecutionResult.reportTo()
-  - 檔案管理流程：File.upload() → Session.storeFile() → AIAssistant.manageFile() → File.download()
-  - 會話協作流程：Server.createSession() → Session.addClient() → Client.collaborateInSession()
+  - HTTP API 流程：AIAssistant HTTP calls → Server.handleCommandSubmit() → Server.distributeCommand() → Queue storage
+  - 執行結果流程：Client polling → Server.handleClientPolling() → Command retrieval → ExecutionResult storage
+  - 檔案管理流程：Server.handleFileUpload() → File.storeFile() → Session association → Server.handleFileDownload()
+  - 會話協作流程：Server.createOrGetSession() → Session.addClient() → multi-client collaboration
 
-- [x] **關聯關係反映真實的對象交互**
-  - 聚合關係準確反映生命週期依賴
-  - 依賴關係準確反映方法調用關係
-  - 多重性約束符合業務邏輯需求
+- [x] **關聯關係反映真實的系統架構**
+  - 聚合關係準確反映 Server 的資料管理職責
+  - 依賴關係準確反映資料結構間的邏輯關聯
+  - 多重性約束符合 Server-centric 架構需求
 
 - [x] **多重性約束符合業務規則**
-  - 1:* 關係：Server-Session, Session-File, Queue-Command 等
-  - 1:1 關係：AIAssistant-ExecutionMode, Client-Queue
-  - 所有約束都經過業務規則驗證
+  - 1:* 關係：Server 管理多個 Session, Queue, ExecutionResult, File
+  - 邏輯關聯：Session 包含多個 File, Queue 儲存多個 Command
+  - 所有約束都經過 Server-centric 架構驗證
 
 ### 6.2 設計品質評估
 
 - [x] **職責單一性 (Single Responsibility)**
-  - AIAssistant：專注智能分析和指令管理
-  - Client：專注遠端代理執行和通訊，內部處理基礎設施互動
-  - Server：專注被動協調和資源管理
-  - 每個類別都有明確且單一的核心職責
+  - Server：專注於 HTTP API 處理、業務邏輯協調、資料結構管理
+  - Command, ExecutionResult, File, Session, Queue：各自專注於特定資料結構的屬性和操作
+  - 每個組件都有明確且單一的核心職責
 
 - [x] **低耦合 (Low Coupling)**
-  - 使用依賴注入模式（如 AIAssistant 透過參數接收 Server）
-  - 避免直接實例化依賴對象
-  - 介面抽象化通訊機制（Communication 類別）
-  - 類別間主要通過方法參數進行交互
+  - Server 作為唯一實作組件，透過 HTTP API 與外部消費者解耦
+  - 資料結構間透過 ID 關聯而非直接引用
+  - 避免跨資料結構的直接依賴，統一由 Server 協調
+  - 外部消費者 (AIAssistant, Client) 僅透過 HTTP 協定與系統交互
 
 - [x] **高內聚 (High Cohesion)**
-  - 相關屬性和方法集中在同一類別
-  - ExecutionResult 包含所有結果相關的狀態和行為
-  - Session 包含所有會話相關的管理功能
-  - Queue 包含所有佇列操作的完整實現
+  - Server 集中所有業務邏輯處理和資料管理功能
+  - 每個資料結構包含完整的相關屬性和操作方法
+  - ExecutionResult 包含所有執行結果相關的狀態和行為
+  - Session 包含所有會話相關的管理功能和狀態追蹤
 
 - [x] **可擴展性 (Extensibility)**
-  - ExecutionMode 支援新增不同的執行策略
-  - Communication 支援新增不同的通訊協定
-  - File 類別支援不同檔案類型和格式
-  - Infrastructure 支援不同類型的基礎設施
+  - Server 的 HTTP API 設計支援新增不同類型的操作
+  - 資料結構的 JSON 序列化支援版本演進
+  - File 類別支援不同檔案類型和格式擴展
+  - Session 隔離機制支援不同協作模式的擴展
 
 ### 6.3 架構完整性驗證
 
 **核心架構模式驗證**：
-- [x] **被動協調模式**：Server 類別實現被動響應設計
-- [x] **FIFO 順序保證**：Queue 類別確保先進先出
-- [x] **會話隔離**：Session 類別提供完整隔離機制
-- [x] **檔案唯一識別**：File 類別支援 file-id 唯一性
+- [x] **被動協調模式**：Server 僅響應 HTTP 請求，不主動發起操作
+- [x] **FIFO 順序保證**：Queue 資料結構確保 Command 先進先出執行
+- [x] **會話隔離**：Session 資料結構提供完整的多專案/環境隔離
+- [x] **檔案唯一識別**：File 資料結構支援 file-id 唯一性和重複處理
 
 **業務流程完整性**：
-- [x] **同步/非同步執行模式**：ExecutionMode 和 Command 類別支援
-- [x] **HTTP Polling 機制**：Communication 類別實現
-- [x] **多客戶端協作**：Session 和 Client 類別支援
-- [x] **檔案摘要和選擇性下載**：File 和 AIAssistant 類別支援
+- [x] **同步/非同步執行模式**：Server 根據 Command 屬性動態判斷執行模式
+- [x] **HTTP Polling 機制**：Server 的 handleClientPolling() API 支援 Client polling
+- [x] **多客戶端協作**：Session 支援多個 Client 在同一 session 內協作
+- [x] **檔案摘要和選擇性下載**：File 自動生成摘要，支援 HTTP API 選擇性下載
 
 ---
 
 ## 總結
 
 ### 轉換成功驗證
-✅ **概念完整性**：67個原始名詞概念成功歸納為10個核心實作類別
-✅ **關係準確性**：樹狀結構中的動詞關係準確轉換為類別方法和關聯
-✅ **架構一致性**：OOA設計完全符合原始public-tunnel技術規格
-✅ **實作可行性**：具體的方法簽名和屬性定義可直接用於開發
+✅ **概念完整性**：67個原始名詞概念成功歸納為5個核心組件 (Server + 4個資料結構)
+✅ **系統邊界清晰**：Server-centric 設計聚焦於實際實作範圍，外部消費者透過 HTTP API 交互
+✅ **架構一致性**：Server-centric 設計完全符合原始 public-tunnel 技術規格
+✅ **實作可行性**：具體的 HTTP API 方法和資料結構定義可直接用於開發
+
+### 系統邊界重新定義價值
+通過系統邊界重新定義，我們達成了：
+
+1. **實作聚焦**：從8個類別精簡為1個實作組件 + 4個資料結構
+2. **職責清晰**：Server 承擔所有業務邏輯，資料結構專注於資料操作
+3. **低耦合設計**：外部消費者透過標準 HTTP API 與系統解耦
+4. **高可維護性**：集中的業務邏輯便於維護和擴展
 
 ### 方法論價值證明
-這個OOA設計成功完成了從「使用者情境」→「結構化分析」→「類別圖設計」的完整轉換鏈：
+這個 Server-centric OOA 設計成功完成了從「使用者情境」→「結構化分析」→「系統邊界定義」→「實作藍圖」的完整轉換鏈：
 
-1. **情境還原** (`docs/04_devops_concept.md`)：將technical specs轉為user scenarios
-2. **結構化分析** (`analysis/devops_concept_structured_analysis.md`)：從scenarios提取概念結構  
-3. **OOA設計** (本文件)：從概念結構推導實作藍圖
+1. **情境還原** (`docs/04_devops_concept.md`)：將 technical specs 轉為 user scenarios
+2. **結構化分析** (`analysis/devops_concept_structured_analysis.md`)：從 scenarios 提取概念結構  
+3. **系統邊界定義**：識別實作範圍與外部消費者邊界
+4. **Server-centric 設計** (本文件)：從概念結構推導實際可實作的系統架構
 
 ### 後續應用指引
-此OOA設計可作為：
-- **開發藍圖**：直接指導public-tunnel系統的程式實作
-- **架構驗證**：確保實作符合原始需求和使用者情境  
-- **測試設計**：基於類別方法設計單元測試和整合測試
-- **文檔基準**：作為系統文檔和API設計的參考基準
+此 Server-centric OOA 設計可作為：
+- **開發藍圖**：直接指導 public-tunnel server 的程式實作
+- **API 設計**：HTTP API 方法簽名直接對應 REST endpoint 設計
+- **資料庫設計**：5個資料結構可直接映射為資料庫 schema
+- **測試設計**：基於 Server 方法設計 API 測試和單元測試
+- **部署指南**：單一 Server 組件簡化部署和維運
 
-整個方法論鏈得到完整驗證，可成功應用於其他技術系統的分析和設計。
+整個方法論鏈得到完整驗證，Server-centric 設計方法可成功應用於其他需要明確實作邊界的技術系統。
