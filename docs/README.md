@@ -1,8 +1,8 @@
-# Public-Tunnel 文檔結構
+# Public-Tunnel 文件結構
 
-## 📁 文檔組織
+## 📁 文件組織
 
-本專案採用**階段式文檔管理**，按開發流程分階段組織：
+本專案採用**階段式文件管理**，按開發流程分階段組織：
 
 ```
 docs/
@@ -11,7 +11,7 @@ docs/
 │   ├── 02_user_story.md       # 業務需求和測試規範  
 │   └── 03_devops_scenario.md  # DevOps 使用情境
 └── design/               # 設計階段 ✅ 
-    ├── 01_devops_concept.md        # 情境概念文檔
+    ├── 01_devops_concept.md        # 情境概念文件
     ├── 02_structured_analysis.md   # 結構化分析
     ├── 03_ooa_design.md            # 物件導向分析設計
     ├── 04_methodology_validation.md # 方法學驗證總結
@@ -50,7 +50,7 @@ docs/
 ### ✅ 極簡 Server-centric 架構
 - **Server**: 1個實作組件，9個 HTTP API 方法
 - **資料結構**: Command, ExecutionResult, File  
-- **環境變數**: 2個配置項（admin token + sync timeout）
+- **環境變數**: 2個設定項（admin token + sync timeout）
 - **智能特色**: 自動 sync-to-async 切換
 
 ### ✅ 完整覆蓋驗證  
@@ -60,4 +60,4 @@ docs/
 
 ## 🚀 設計階段完成
 
-設計階段已全部完成，產出完整的系統實作藍圖。進入實作階段時，設計文檔將作為開發的技術依據。
+設計階段已全部完成，產出完整的系統實作藍圖。進入實作階段時，設計文件將作為開發的技術依據。

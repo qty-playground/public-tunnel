@@ -37,7 +37,7 @@
 - **AIAssistant**：AI助手、AI大腦、AI端 → 系統的外部消費者，透過 HTTP API 使用我們的服務
 - **Client**：Client端、client → 系統的外部消費者，透過 HTTP API 使用我們的服務
 - **Environment**：遠端環境、本機環境、生產環境 → 拽象概念，Client運行的位置，不需要實作
-- **Infrastructure**：機器、服務器、Web前端、API後端、資料庫服務器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
+- **Infrastructure**：機器、伺服器、Web前端、API後端、資料庫伺服器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
 - **ExecutionMode**：執行模式、同步、非同步 → Command的屬性，不需要獨立類別
 - **Communication**：HTTP polling機制、主動polling、polling → HTTP 協定實作細節，由 Server 提供 API 終點
 
@@ -80,7 +80,7 @@ Server (核心實作組件)
 
 ### 實作組件 (Implementation Component)
 
-#### Server (核心服務器)
+#### Server (核心伺服器)
 ```java
 class Server {
     // 核心屬性
@@ -159,12 +159,12 @@ public HttpResponse submitCommand(String sessionId, String targetClient, String 
 ```
 
 **設計特點**：
-- **極簡設計**：單一環境變數，無需複雜的用戶管理系統
+- **極簡設計**：單一環境變數，無需複雜的使用者管理系統
 - **安全保障**：Token 在 Server 啟動時載入，運行期間不變動
 - **部署簡單**：透過 Docker 或系統環境變數設定
 - **權限單一**：只有一個管理員權限層級，符合極簡架構原則
 - **智能切換**：自動檢測執行時間，無需 AI 預判斷任務類型
-- **可配置**：timeout 闾值透過環境變數設定，適應不同部署環境
+- **可設定**：timeout 闾值透過環境變數設定，適應不同部署環境
 
 ### 資料結構 (Data Structures)
 
@@ -252,9 +252,9 @@ class File {
 
 | 使用者類別 | 關係 | 被使用類別 | 依賴描述 |
 |-----------|------|------------|----------|
-| Server | ..> | Command | Server 創建和管理 Command 物件 |
-| Server | ..> | ExecutionResult | Server 創建和儲存 ExecutionResult 物件 |
-| Server | ..> | File | Server 創建和管理 File 物件 |
+| Server | ..> | Command | Server 建立和管理 Command 物件 |
+| Server | ..> | ExecutionResult | Server 建立和儲存 ExecutionResult 物件 |
+| Server | ..> | File | Server 建立和管理 File 物件 |
 | Command | ..> | ExecutionResult | Command 執行後產生 ExecutionResult |
 | ExecutionResult | ..> | File | ExecutionResult 可關聯多個 File (透過 fileIds) |
 
@@ -268,7 +268,7 @@ class File {
 
 **數據一致性驗證**：
 - [x] Command 與 ExecutionResult 通過 commandId 建立關聯
-- [x] File 與 Command 通過 sessionId 實現邏輯隔離
+- [x] File 與 Command 通過 sessionId 實作邏輯隔離
 - [x] ExecutionResult 與 File 通過 fileIds 陣列建立關聯
 
 **生命週期匹配性**：

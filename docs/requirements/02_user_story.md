@@ -145,7 +145,7 @@ Server端 (被動響應)
 ## 概述
 
 ### 專案背景
-public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI 能夠控制位於無法直接存取網路環境中的裝置。系統採用被動式設計，透過 HTTP polling 機制實現通訊。
+public-tunnel 是一個為 AI 助手設計的網路隧道解決方案，讓 AI 能夠控制位於無法直接存取網路環境中的裝置。系統採用被動式設計，透過 HTTP polling 機制實作通訊。
 
 ### User Stories 範圍與目標
 本文件定義了 public-tunnel 系統的核心業務規則，每個 User Story 代表一個可測試的功能單元。這些 User Stories 將作為：
