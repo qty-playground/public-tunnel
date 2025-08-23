@@ -162,22 +162,22 @@ class Command {
 #### ExecutionResult (執行結果資料)
 ```java
 class ExecutionResult {
-    // 核心屬性
+    // 純資料屬性
     -String commandId           // 對應指令ID
-    -String status              // 執行狀態
-    -String content             // 結果內容
+    -String status              // 執行狀態 (success/error/running)
+    -String output              // 執行輸出內容
     -List<String> fileIds       // 附件檔案ID列表
-    -long executionTime         // 執行時間
-    -boolean isError            // 錯誤標記
-    -String errorMessage        // 錯誤訊息
+    -long executionTime         // 執行時間戳記
+    -String errorMessage        // 錯誤訊息 (如果有的話)
     
-    // 資料操作
-    +boolean isCompleted()                     // 完成狀態檢查
-    +boolean isSuccess()                       // 成功狀態檢查
-    +boolean hasFiles()                        // 是否有附件
-    +String getSummary()                       // 取得結果摘要
+    // 基本存取器 (Getters/Setters only)
+    +String getCommandId()
+    +String getStatus()
+    +String getOutput()
+    +List<String> getFileIds()
+    +long getExecutionTime()
+    +String getErrorMessage()
     +String toJson()                           // 序列化為 JSON
-    +ExecutionResult fromJson(String json)     // 從 JSON 反序列化
 }
 ```
 
@@ -206,21 +206,17 @@ class File {
 #### Session (會話資料)
 ```java
 class Session {
-    // 核心屬性
+    // 純資料屬性 - 資源隔離單位
     -String sessionId           // Session 唯一ID
-    -Set<String> activeClients   // 活躍 Client 列表
-    -Map<String, Long> clientLastSeen // Client 最後活躍時間
-    -Map<String, String> sessionFiles // Session 內檔案
-    -long createdTime           // Session 建立時間
-    -boolean isolated           // 隔離標記
+    -Set<String> activeClients   // 目前活躍的 Client 列表
+    -Map<String, Long> clientLastSeen // Client 最後活躍時間記錄
+    -long createdTime           // Session 建立時間戳記
     
-    // 資料操作
-    +void addClient(String clientId)          // 添加 Client
-    +void removeClient(String clientId)       // 移除 Client
-    +boolean isClientActive(String clientId)  // Client 活躍檢查
-    +List<String> getActiveClients()          // 取得活躍 Client 列表
-    +void updateClientPresence(String clientId) // 更新 Client 存在狀態
-    +boolean isExpired(long timeoutMs)        // Session 過期檢查
+    // 基本存取器 (Getters/Setters only)  
+    +String getSessionId()
+    +Set<String> getActiveClients()
+    +Map<String, Long> getClientLastSeen()
+    +long getCreatedTime()
     +String toJson()                          // 序列化為 JSON
 }
 ```
@@ -338,17 +334,17 @@ classDiagram
     class ExecutionResult {
         -String commandId
         -String status
-        -String content
+        -String output
         -List~String~ fileIds
         -long executionTime
-        -boolean isError
         -String errorMessage
-        +boolean isCompleted()
-        +boolean isSuccess()
-        +boolean hasFiles()
-        +String getSummary()
+        +String getCommandId()
+        +String getStatus()
+        +String getOutput()
+        +List~String~ getFileIds()
+        +long getExecutionTime()
+        +String getErrorMessage()
         +String toJson()
-        +ExecutionResult fromJson(String json)
     }
     
     class File {
@@ -371,15 +367,11 @@ classDiagram
         -String sessionId
         -Set~String~ activeClients
         -Map~String, Long~ clientLastSeen
-        -Map~String, String~ sessionFiles
         -long createdTime
-        -boolean isolated
-        +void addClient(String clientId)
-        +void removeClient(String clientId)
-        +boolean isClientActive(String clientId)
-        +List~String~ getActiveClients()
-        +void updateClientPresence(String clientId)
-        +boolean isExpired(long timeoutMs)
+        +String getSessionId()
+        +Set~String~ getActiveClients()
+        +Map~String, Long~ getClientLastSeen()
+        +long getCreatedTime()
         +String toJson()
     }
     
