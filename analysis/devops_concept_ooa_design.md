@@ -89,9 +89,10 @@ class Server {
     -Map<String, File> files                // 檔案管理 (key: fileId)
     -Map<String, Set<String>> sessionClients // Session 隔離 (key: sessionId, value: clientIds)
     -String adminToken                      // 管理員認證令牌 (從環境變數 PUBLIC_TUNNEL_ADMIN_TOKEN 讀取)
+    -int syncTimeoutSeconds                 // 同步轉非同步閾值 (從環境變數 PUBLIC_TUNNEL_SYNC_TIMEOUT 讀取，預設 15 秒)
     
     // Core HTTP API Endpoints
-    +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)  // POST /api/session/{sessionId}/command
+    +HttpResponse submitCommand(String sessionId, String targetClient, String command)              // POST /api/session/{sessionId}/command (自動 sync->async 切換)
     +HttpResponse getNextCommand(String sessionId, String clientId)                                  // GET /api/session/{sessionId}/client/{clientId}/next-command  
     +HttpResponse submitResult(String sessionId, String commandId, String status, String output)    // POST /api/session/{sessionId}/result
     +HttpResponse getResult(String sessionId, String commandId)                                      // GET /api/session/{sessionId}/result/{commandId}
@@ -108,6 +109,7 @@ class Server {
 **環境變數設定**：
 ```bash
 PUBLIC_TUNNEL_ADMIN_TOKEN=your-secret-admin-token-here
+PUBLIC_TUNNEL_SYNC_TIMEOUT=15  # 同步轉非同步闾值（秒），預設 15 秒
 ```
 
 **認證邏輯**：
@@ -121,11 +123,48 @@ public HttpResponse getAllSessions(String token) {
 }
 ```
 
+#### 自動 Sync-to-Async 切換機制
+
+**切換邏輯**：
+```java
+public HttpResponse submitCommand(String sessionId, String targetClient, String command) {
+    // 檢查 client 存在性和在線狀態
+    if (!clientExists(sessionId, targetClient)) {
+        return HttpResponse.badRequest("Client not found: " + targetClient);
+    }
+    if (!isClientOnline(sessionId, targetClient)) {
+        return HttpResponse.badRequest("Client offline: " + targetClient);
+    }
+    
+    // 建立 Command 並加入 queue
+    String commandId = UUID.randomUUID().toString();
+    Command cmd = new Command(commandId, command, targetClient, sessionId);
+    addToQueue(sessionId, targetClient, cmd);
+    
+    // 同步等待結果，但有 timeout
+    ExecutionResult result = waitForResult(commandId, this.syncTimeoutSeconds);
+    
+    if (result != null) {
+        // 在時限內完成 -> 直接回傳結果
+        return HttpResponse.ok(result);
+    } else {
+        // 超過時限 -> 轉為非同步模式
+        return HttpResponse.ok(Map.of(
+            "mode", "async",
+            "command_id", commandId,
+            "message", "Command execution timeout, switched to async mode"
+        ));
+    }
+}
+```
+
 **設計特點**：
 - **極簡設計**：單一環境變數，無需複雜的用戶管理系統
 - **安全保障**：Token 在 Server 啟動時載入，運行期間不變動
 - **部署簡單**：透過 Docker 或系統環境變數設定
 - **權限單一**：只有一個管理員權限層級，符合極簡架構原則
+- **智能切換**：自動檢測執行時間，無需 AI 預判斷任務類型
+- **可配置**：timeout 闾值透過環境變數設定，適應不同部署環境
 
 ### 資料結構 (Data Structures)
 
@@ -136,13 +175,10 @@ class Command {
     -String commandId           // 指令唯一識別
     -String content             // 指令內容
     -String targetClient        // 目標 Client
-    -String mode                // 執行模式 (sync/async)
     -long timestamp             // 建立時間
     -String sessionId          // 所屬 Session
     
     // 資料操作
-    +boolean isSync()                          // 同步模式檢查
-    +boolean isAsync()                         // 非同步模式檢查
     +String getTargetClient()                  // 取得目標 Client
     +long getAge()                             // 取得指令年齡
     +String toJson()                           // 序列化為 JSON
@@ -253,7 +289,7 @@ classDiagram
         -Map~String, File~ files
         -Map~String, Set~String~~ sessionClients
         -String adminToken
-        +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)
+        +HttpResponse submitCommand(String sessionId, String targetClient, String command)
         +HttpResponse getNextCommand(String sessionId, String clientId)
         +HttpResponse submitResult(String sessionId, String commandId, String status, String output)
         +HttpResponse getResult(String sessionId, String commandId)
@@ -268,11 +304,8 @@ classDiagram
         -String commandId
         -String content
         -String targetClient
-        -String mode
         -long timestamp
         -String sessionId
-        +boolean isSync()
-        +boolean isAsync()
         +String getTargetClient()
         +long getAge()
         +String toJson()
@@ -360,7 +393,7 @@ classDiagram
   - Queue 作為實作細節，由 Server 內部管理
 
 - [x] **方法覆蓋所有關鍵業務流程**
-  - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存並產生 commandId
+  - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存並產生 commandId (自動同步等待 15 秒)
   - 指令執行流程：Client → Server.getNextCommand() → 取得 Command → 本地執行 → Server.submitResult(commandId)
   - 結果查詢流程：AIAssistant → Server.getResult(commandId) → 以 commandId 為 key 取得 ExecutionResult
   - 檔案管理流程：Client/AIAssistant → Server.uploadFile()/downloadFile() → File 管理
@@ -411,7 +444,7 @@ classDiagram
 - [x] **檔案唯一識別**：File 資料結構支援 file-id 唯一性和重複處理
 
 **業務流程完整性**：
-- [x] **同步/非同步執行模式**：submitCommand() 接受 mode 參數，支援不同執行策略
+- [x] **自動 Sync-to-Async 切換**：submitCommand() 自動檢測執行時間，超過 15 秒自動轉非同步
 - [x] **Client 指令查詢機制**：getNextCommand() API 讓 Client 主動查詢待執行指令
 - [x] **多客戶端協作**：getActiveClients() 支援多個 Client 在同一 session 內協作
 - [x] **檔案管理和傳輸**：uploadFile()/downloadFile() 支援雙向檔案傳輸
