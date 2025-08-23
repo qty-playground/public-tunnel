@@ -19,25 +19,25 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（8個核心實作類別）：
+**建立分類體系**（5個核心實作組件）：
 
-| 類別名稱 | 歸屬名詞概念 | 核心職責 |
-|---------|-------------|----------|
-| **AIAssistant** | AI助手、AI大腦、AI端 | 智能分析和指令管理 |
-| **Client** | Client端、client | 遠端代理執行（包含通訊機制） |
-| **Server** | Server、中央協調系統、中央系統 | 被動協調和資源管理（包含執行模式管理） |
-| **Command** | 指令、command-id、執行模式、同步、非同步 | 執行指令的封裝和追蹤 |
-| **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的管理和狀態 |
-| **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案存儲和傳輸管理 |
-| **Session** | session、session空間、不同的session | 會話隔離和協作空間 |
-| **Queue** | command queue、FIFO command queue、專屬queue | 指令佇列和順序管理 |
+| 組件名稱 | 歸屬名詞概念 | 核心職責 | 組件類型 |
+|---------|-------------|----------|----------|
+| **Server** | Server、中央協調系統、中央系統 | HTTP API處理器和業務邏輯協調器 | 實作類別 |
+| **Command** | 指令、command-id、執行模式、同步、非同步 | 指令的資料結構和狀態管理 | 資料結構 |
+| **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的資料結構 | 資料結構 |
+| **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案元數據和存儲管理 | 資料結構 |
+| **Session** | session、session空間、不同的session | 會話隔離和資源管理 | 資料結構 |
+| **Queue** | command queue、FIFO command queue、專屬queue | FIFO指令佇列管理 | 資料結構 |
 
-**移除的抽象概念**：
+**移除的外部角色和抽象概念**：
 - **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
-- **Environment**：遠端環境、本機環境、生產環境 → 抽象概念，Client啟動的運行位置，不需要實作
+- **AIAssistant**：AI助手、AI大腦、AI端 → 系統的外部消費者，透過 HTTP API 使用我們的服務
+- **Client**：Client端、client → 系統的外部消費者，透過 HTTP API 使用我們的服務
+- **Environment**：遠端環境、本機環境、生產環境 → 拽象概念，Client運行的位置，不需要實作
 - **Infrastructure**：機器、服務器、Web前端、API後端、資料庫服務器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
 - **ExecutionMode**：執行模式、同步、非同步 → Command的屬性，不需要獨立類別
-- **Communication**：HTTP polling機制、主動polling、polling → 實作細節，整合到Client/Server中
+- **Communication**：HTTP polling機制、主動polling、polling → HTTP 協定實作細節，由 Server 提供 API 終點
 
 ### 微小概念剔除分析
 
@@ -57,6 +57,8 @@
 - 主動polling → Client.startPolling()方法的行為
 - 執行模式選擇 → Command.mode屬性和AIAssistant的決策邏輯
 - 同步/非同步模式 → Command的屬性設定，不需要獨立類別
+
+**系統架構概念**：
 - 關鍵斷點 → 用系統架構設計表示
 - 瓶頸 → 用 Communication.isConnectionActive() 屬性表示
 - 自動化情境收集循環 → 用整體系統行為表示
@@ -71,61 +73,38 @@
 - 完全隔離 → 用 Session.isolateFromOthers() 架構設計表示
 - 唯一識別 → 用各類別的 ID 屬性表示
 
-**保留原則驗證**：所有影響業務邏輯、系統架構或數據結構的概念均已保留在8個核心類別中。
+**保留原則驗證**：所有影響 public-tunnel Server 業務邏輯、系統架構或數據結構的概念均已保留在5個核心組件中。外部角色（AI助手、Client 程式）的行為不在我們的實作範圍內。
 
 ---
 
 ## Step 2: 樹狀結構重組
 
-使用類別概念重新建構的精簡樹狀結構：
+使用核心組件重新建構的精簡架構：
 
 ```
-核心系統架構
+public-tunnel Server 中心設計
 
-AIAssistant (AI助手)
-├── 指令管理 →
-│   ├── Command (指令)
-│   │   └── 生成送出 → Server (伺服器)
-│   └── ExecutionMode (執行模式)
-│       └── 選擇控制 → 同步/非同步
-├── 結果處理 →
-│   ├── ExecutionResult (執行結果)
-│   │   └── 分析追蹤 → command-id
-│   └── File (檔案)
-│       └── 管理操作 → 上傳/下載
-└── 會話協調 →
-    └── Session (會話)
-        └── 空間管理 → 多客戶端協作
+Server (核心實作組件)
+├── HTTP API 處理器 →
+│   ├── 指令提交 API → 建立 Command 物件
+│   ├── 結果查詢 API → 取得 ExecutionResult 物件
+│   ├── 檔案管理 API → 上傳/下載 File 物件
+│   └── Client Polling API → 分發 Queue 中的 Command
+├── 業務邏輯協調 →
+│   ├── Session 隔離管理
+│   ├── FIFO Queue 管理
+│   ├── 同步/非同步模式切換
+│   └── Client 狀態追蹤
+└── 資料結構管理 →
+    ├── Command (指令資料)
+    ├── ExecutionResult (結果資料)
+    ├── File (檔案資料)
+    ├── Session (會話資料)
+    └── Queue (佇列資料)
 
-Client (客戶端)
-├── 通訊機制 →
-│   ├── Communication (通訊)
-│   │   └── 主動polling → Server (伺服器)
-│   └── Queue (佇列)
-│       └── 指令獲取 → FIFO順序
-├── 執行處理 →
-│   ├── Command (指令)
-│   │   └── 本地執行 → 系統指令執行
-│   └── ExecutionResult (執行結果)
-│       └── 結果回報 → 成功/錯誤+檔案
-└── 協作模式 →
-    └── Session (會話)
-        └── 多客戶協作 → 隔離空間
-
-Server (伺服器)
-├── 會話管理 →
-│   ├── Session (會話)
-│   │   └── 隔離提供 → 不同專案/環境
-│   └── Queue (佇列)
-│       └── 維護分發 → 每個client專屬佇列
-├── 指令協調 →
-│   ├── Command (指令)
-│   │   └── 佇列放入 → 目標client的queue
-│   └── ExecutionResult (執行結果)
-│       └── 索引儲存 → command-id對應
-└── 檔案服務 →
-    └── File (檔案)
-        └── 上傳下載管理 → session範圍內管理
+外部交互 (不在實作範圍)
+├── AI助手 → 透過 HTTP API 使用 Server
+└── Client 程式 → 透過 HTTP API 使用 Server
 ```
 
 ---
