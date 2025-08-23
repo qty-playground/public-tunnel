@@ -19,31 +19,39 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（13個主要類別）：
+**建立分類體系**（11個核心實作類別）：
 
 | 類別名稱 | 歸屬名詞概念 | 核心職責 |
 |---------|-------------|----------|
-| **User** | 維運工程師、DevOps工程師 | 使用者操作和問題解決 |
 | **AIAssistant** | AI助手、AI大腦、AI端 | 智能分析和指令管理 |
-| **Client** | Client端、client | 遠端環境的代理執行 |
+| **Client** | Client端、client | 遠端代理執行 |
 | **Server** | Server、中央協調系統、中央系統 | 被動協調和資源管理 |
 | **Command** | 指令、command-id | 執行指令的封裝和追蹤 |
 | **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的管理和狀態 |
 | **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案存儲和傳輸管理 |
 | **Session** | session、session空間、不同的session | 會話隔離和協作空間 |
 | **Queue** | command queue、FIFO command queue、專屬queue | 指令佇列和順序管理 |
-| **Environment** | 遠端環境、本機環境、生產環境、環境資訊 | 執行環境的抽象和管理 |
 | **Infrastructure** | 機器、服務器、Web前端、API後端、資料庫服務器 | 基礎設施的抽象表示 |
 | **ExecutionMode** | 執行模式、同步、非同步 | 執行策略和模式控制 |
 | **Communication** | HTTP polling機制、主動polling、polling | 通訊協定和連線管理 |
 
+**移除的抽象概念**：
+- **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
+- **Environment**：遠端環境、本機環境、生產環境 → 抽象概念，Client啟動的運行位置，不需要實作
+
 ### 微小概念剔除分析
 
-**剔除的微小概念**（17個）：
-- 調查過程 → 用 User.analyzeProblems() 方法表示
-- 資料複製貼上 → 用 User.switchEnvironments() 方法表示  
-- Context Switch問題 → 用 User.hasContextSwitchProblem() 狀態表示
-- 人肉資料搬運工 → 用 User 的狀態屬性表示
+**剔除的微小概念**（21個）：
+- 調查過程 → 系統外部的使用者行為，不實作
+- 資料複製貼上 → 系統外部的使用者行為，不實作
+- Context Switch問題 → 系統外部的使用者行為，不實作
+- 人肉資料搬運工 → 系統外部的使用者行為，不實作
+- 維運工程師 → 系統外部的操作者，不實作
+- DevOps工程師 → 系統外部的操作者，不實作
+- 遠端環境 → Client運行的抽象位置，不實作
+- 本機環境 → Client運行的抽象位置，不實作
+- 生產環境 → Client運行的抽象位置，不實作
+- 環境資訊 → 由Client直接收集，不需要Environment類別
 - 關鍵斷點 → 用系統架構設計表示
 - 瓶頸 → 用 Communication.isConnectionActive() 屬性表示
 - 自動化情境收集循環 → 用整體系統行為表示
@@ -67,62 +75,52 @@
 使用類別概念重新建構的精簡樹狀結構：
 
 ```
-User (維運工程師)
-├── 工作流程管理 →
-│   ├── Infrastructure (基礎設施)
-│   │   └── 監控管理 → Environment (環境)
-│   ├── AIAssistant (AI助手)  
-│   │   └── 協作互動 → ExecutionResult (執行結果)
-│   └── 問題解決流程 →
-│       ├── 資料收集 → File (檔案)
-│       └── 修正執行 → Command (指令)
-└── 痛點識別 →
-    └── 自動化需求 → Communication (通訊)
+核心系統架構
 
 AIAssistant (AI助手)
 ├── 指令管理 →
 │   ├── Command (指令)
-│   │   └── 生成送出 → Client (客戶端)
+│   │   └── 生成送出 → Server (伺服器)
 │   └── ExecutionMode (執行模式)
-│       └── 選擇控制 → Server (伺服器)
+│       └── 選擇控制 → 同步/非同步
 ├── 結果處理 →
 │   ├── ExecutionResult (執行結果)
-│   │   └── 分析追蹤 → Session (會話)
+│   │   └── 分析追蹤 → command-id
 │   └── File (檔案)
-│       └── 管理操作 → Environment (環境)
+│       └── 管理操作 → 上傳/下載
 └── 會話協調 →
     └── Session (會話)
-        └── 空間管理 → Queue (佇列)
+        └── 空間管理 → 多客戶端協作
 
 Client (客戶端)
 ├── 通訊機制 →
 │   ├── Communication (通訊)
 │   │   └── 主動polling → Server (伺服器)
 │   └── Queue (佇列)
-│       └── 指令獲取 → Command (指令)
+│       └── 指令獲取 → FIFO順序
 ├── 執行處理 →
 │   ├── Command (指令)
-│   │   └── 本機執行 → Environment (環境)
+│   │   └── 本地執行 → Infrastructure (基礎設施)
 │   └── ExecutionResult (執行結果)
-│       └── 結果回報 → File (檔案)
+│       └── 結果回報 → 成功/錯誤+檔案
 └── 協作模式 →
     └── Session (會話)
-        └── 多客戶協作 → Infrastructure (基礎設施)
+        └── 多客戶協作 → 隔離空間
 
 Server (伺服器)
 ├── 會話管理 →
 │   ├── Session (會話)
-│   │   └── 隔離提供 → User (使用者)
+│   │   └── 隔離提供 → 不同專案/環境
 │   └── Queue (佇列)
-│       └── 維護分發 → ExecutionMode (執行模式)
+│       └── 維護分發 → 每個client專屬佇列
 ├── 指令協調 →
 │   ├── Command (指令)
-│   │   └── 佇列放入 → Communication (通訊)
+│   │   └── 佇列放入 → 目標client的queue
 │   └── ExecutionResult (執行結果)
-│       └── 索引儲存 → File (檔案)
+│       └── 索引儲存 → command-id對應
 └── 檔案服務 →
     └── File (檔案)
-        └── 上傳下載管理 → Environment (環境)
+        └── 上傳下載管理 → session範圍內管理
 ```
 
 ---
@@ -164,8 +162,6 @@ class AIAssistant {
     +ExecutionResult trackExecution(String commandId)             // 追蹤執行
     +File manageFile(String fileId, String operation)             // 管理檔案
     +Session manageSession(String sessionId)                      // 管理會話
-    +void analyzeEnvironment(Environment environment)             // 分析環境
-    +boolean canDirectlyAccess(Environment environment)           // 存取能力檢查
     +void submitToServer(Server server, Command command)          // 提交指令
 }
 ```
@@ -175,20 +171,23 @@ class AIAssistant {
 class Client {
     // 屬性（從關係推導）
     -String clientId
-    -Environment localEnvironment
+    -String sessionId
     -Queue commandQueue
     -boolean isOnline
     -Communication communication
+    -long lastHeartbeat
     
     // 方法（從動詞轉換）
     +void startPolling(Server server)                        // 開始 polling
-    +Command retrieveCommand(Queue queue)                    // 取得指令
-    +ExecutionResult executeCommand(Command command)         // 執行指令
+    +Command retrieveCommand()                               // 從佇列取得指令
+    +ExecutionResult executeCommand(Command command)         // 在本地環境執行指令
     +void reportResult(ExecutionResult result, Server server) // 回報結果
     +void handleFileOperation(File file, String operation)   // 檔案操作
     +void reconnectOnFailure()                               // 重新連線
     +boolean isConnected()                                   // 連線狀態檢查
     +void collaborateInSession(Session session)              // 會話協作
+    +void sendHeartbeat()                                    // 發送心跳
+    +Infrastructure getLocalInfrastructure()                 // 獲取本地基礎設施資訊
 }
 ```
 
@@ -231,7 +230,7 @@ class Command {
     +void switchToAsync()                                // 切換到非同步
     +String getTargetClient()                            // 取得目標客戶端
     +boolean exceedsThreshold(long threshold)            // 超過門檻檢查
-    +ExecutionResult execute(Environment environment)    // 執行指令
+    +ExecutionResult execute(Infrastructure infrastructure) // 在基礎設施上執行指令
     +void submitTo(Server server)                        // 提交到服務器
 }
 ```
@@ -323,26 +322,6 @@ class Queue {
 }
 ```
 
-### Environment (環境)
-```java
-class Environment {
-    // 屬性（從關係推導）
-    -String environmentId
-    -String type
-    -Map<String, String> systemStatus
-    -List<Infrastructure> infrastructure
-    -boolean isRemote
-    -boolean isAccessible
-    
-    // 方法（從動詞轉換）
-    +Map<String, String> collectInformation()           // 收集資訊
-    +boolean isAccessible()                             // 可存取性檢查
-    +void updateStatus(Map<String, String> status)      // 更新狀態
-    +List<Infrastructure> getInfrastructure()           // 取得基礎設施
-    +boolean isRemote()                                 // 遠端檢查
-    +void executeIn(Command command)                    // 在環境中執行
-}
-```
 
 ### Infrastructure (基礎設施)
 ```java
@@ -351,7 +330,6 @@ class Infrastructure {
     -String serverId
     -String serverType
     -String status
-    -Environment environment
     -boolean requiresSSH
     
     // 方法（從動詞轉換）
@@ -360,7 +338,6 @@ class Infrastructure {
     +void executeCommand(Command command)         // 執行指令
     +String getServerType()                       // 取得服務器類型
     +boolean requiresSSH()                        // SSH 需求檢查
-    +void monitoredBy(User user)                  // 被使用者監控
 }
 ```
 
@@ -414,20 +391,18 @@ class Communication {
 
 | 主類別 | 關係 | 從屬類別 | 多重性 | 關係描述 |
 |-------|------|---------|--------|----------|
-| User | *-- | Environment | 1 : * | 使用者管理多個環境 |
 | AIAssistant | *-- | ExecutionMode | 1 : 1 | AI助手持有當前執行模式 |
 | Client | *-- | Queue | 1 : 1 | 客戶端擁有專屬指令佇列 |
 | Server | *-- | Session | 1 : * | 伺服器管理多個會話 |
 | Session | *-- | File | 1 : * | 會話包含多個檔案 |
 | Queue | *-- | Command | 1 : * | 佇列儲存多個指令 |
 | ExecutionResult | *-- | File | 1 : * | 執行結果包含附件檔案 |
-| Environment | *-- | Infrastructure | 1 : * | 環境包含多個基礎設施 |
+| Client | *-- | Infrastructure | 1 : * | 客戶端管理本地基礎設施 |
 
 ### 依賴關係 (uses, ..>)
 
 | 使用者類別 | 關係 | 被使用類別 | 依賴描述 |
 |-----------|------|------------|----------|
-| User | ..> | AIAssistant | 使用者使用AI助手協作分析 |
 | AIAssistant | ..> | Server | AI助手使用伺服器提交指令 |
 | Client | ..> | Server | 客戶端使用伺服器進行polling |
 | AIAssistant | ..> | Command | AI助手創建和管理指令 |
@@ -437,13 +412,14 @@ class Communication {
 | Client | ..> | Communication | 客戶端使用通訊協定 |
 | ExecutionResult | ..> | Server | 執行結果回報到伺服器 |
 | File | ..> | AIAssistant | 檔案被AI助手管理 |
+| Infrastructure | ..> | Client | 基礎設施被客戶端控制 |
 
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
-- [x] 一個使用者可以管理多個環境 (1:*)
 - [x] 一個AI助手在同一時間只能有一個執行模式 (1:1)
 - [x] 每個客戶端有自己專屬的指令佇列 (1:1)
+- [x] 一個客戶端可以管理多個本地基礎設施 (1:*)
 - [x] 一個伺服器可以管理多個隔離的會話 (1:*)
 
 **數據一致性驗證**：
@@ -462,49 +438,37 @@ class Communication {
 
 ```mermaid
 classDiagram
-    class User {
-        -String userId
-        -String role
-        -List~Environment~ environments
-        -boolean hasContextSwitchProblem
-        +void faceProblems(Infrastructure infrastructure)
-        +void checkServers(List~Infrastructure~ servers)
-        +void analyzeProblems(AIAssistant assistant)
-        +void executeCorrections(List~Command~ commands)
-        +void switchEnvironments(Environment from, Environment to)
-        +boolean hasContextSwitchProblem()
-        +void collaborateWith(AIAssistant assistant)
-    }
-    
     class AIAssistant {
         -String assistantId
         -List~String~ capabilities
         -ExecutionMode currentMode
-        -boolean canDirectAccess
         +Command createCommand(String content, String targetClient)
         +ExecutionMode selectExecutionMode(Command command)
         +ExecutionResult trackExecution(String commandId)
         +File manageFile(String fileId, String operation)
         +Session manageSession(String sessionId)
-        +void analyzeEnvironment(Environment environment)
-        +boolean canDirectlyAccess(Environment environment)
         +void submitToServer(Server server, Command command)
+        +List~Client~ getAvailableClients(Session session)
+        +boolean canExecuteRemotely()
     }
     
     class Client {
         -String clientId
-        -Environment localEnvironment
+        -String sessionId
         -Queue commandQueue
         -boolean isOnline
         -Communication communication
+        -long lastHeartbeat
         +void startPolling(Server server)
-        +Command retrieveCommand(Queue queue)
+        +Command retrieveCommand()
         +ExecutionResult executeCommand(Command command)
         +void reportResult(ExecutionResult result, Server server)
         +void handleFileOperation(File file, String operation)
         +void reconnectOnFailure()
         +boolean isConnected()
         +void collaborateInSession(Session session)
+        +void sendHeartbeat()
+        +Infrastructure getLocalInfrastructure()
     }
     
     class Server {
@@ -535,7 +499,7 @@ classDiagram
         +void switchToAsync()
         +String getTargetClient()
         +boolean exceedsThreshold(long threshold)
-        +ExecutionResult execute(Environment environment)
+        +ExecutionResult execute(Infrastructure infrastructure)
         +void submitTo(Server server)
     }
     
@@ -602,33 +566,17 @@ classDiagram
         +void maintainedBy(Server server)
     }
     
-    class Environment {
-        -String environmentId
-        -String type
-        -Map~String, String~ systemStatus
-        -List~Infrastructure~ infrastructure
-        -boolean isRemote
-        -boolean isAccessible
-        +Map~String, String~ collectInformation()
-        +boolean isAccessible()
-        +void updateStatus(Map~String, String~ status)
-        +List~Infrastructure~ getInfrastructure()
-        +boolean isRemote()
-        +void executeIn(Command command)
-    }
-    
     class Infrastructure {
         -String serverId
         -String serverType
         -String status
-        -Environment environment
         -boolean requiresSSH
         +boolean isOnline()
         +String checkSystemStatus()
         +void executeCommand(Command command)
         +String getServerType()
         +boolean requiresSSH()
-        +void monitoredBy(User user)
+        +void controlledBy(Client client)
     }
     
     class ExecutionMode {
@@ -662,17 +610,15 @@ classDiagram
     }
     
     %% 聚合關係 (has-a)
-    User "1" *-- "*" Environment : manages
     AIAssistant "1" *-- "1" ExecutionMode : uses
     Client "1" *-- "1" Queue : owns
+    Client "1" *-- "*" Infrastructure : manages
     Server "1" *-- "*" Session : manages
     Session "1" *-- "*" File : contains
     Queue "1" *-- "*" Command : stores
     ExecutionResult "1" *-- "*" File : includes
-    Environment "1" *-- "*" Infrastructure : contains
     
     %% 依賴關係 (uses)
-    User ..> AIAssistant : collaborates
     AIAssistant ..> Server : submits_commands
     Client ..> Server : polls
     AIAssistant ..> Command : creates
@@ -682,6 +628,7 @@ classDiagram
     Client ..> Communication : uses
     ExecutionResult ..> Server : reports_to
     File ..> AIAssistant : managed_by
+    Infrastructure ..> Client : controlled_by
 ```
 
 ---
@@ -706,17 +653,17 @@ classDiagram
   - 多重性約束符合業務邏輯需求
 
 - [x] **多重性約束符合業務規則**
-  - 1:* 關係：User-Environment, Server-Session, Session-File 等
+  - 1:* 關係：Client-Infrastructure, Server-Session, Session-File 等
   - 1:1 關係：AIAssistant-ExecutionMode, Client-Queue
   - 所有約束都經過業務規則驗證
 
 ### 6.2 設計品質評估
 
 - [x] **職責單一性 (Single Responsibility)**
-  - User：專注使用者操作和問題解決流程
   - AIAssistant：專注智能分析和指令管理
-  - Client：專注遠端執行和通訊
+  - Client：專注遠端代理執行和通訊
   - Server：專注被動協調和資源管理
+  - Infrastructure：專注基礎設施資訊和執行能力
   - 每個類別都有明確且單一的核心職責
 
 - [x] **低耦合 (Low Coupling)**
@@ -756,7 +703,7 @@ classDiagram
 ## 總結
 
 ### 轉換成功驗證
-✅ **概念完整性**：67個原始名詞概念成功歸納為13個核心類別
+✅ **概念完整性**：67個原始名詞概念成功歸納為11個核心實作類別
 ✅ **關係準確性**：樹狀結構中的動詞關係準確轉換為類別方法和關聯
 ✅ **架構一致性**：OOA設計完全符合原始public-tunnel技術規格
 ✅ **實作可行性**：具體的方法簽名和屬性定義可直接用於開發
