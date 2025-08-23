@@ -428,36 +428,40 @@ classDiagram
     Server "1" *-- "*" Queue : manages
     Server "1" *-- "*" ExecutionResult : stores
     Server "1" *-- "*" File : manages
-    Session "1" *-- "*" File : contains_logically
+    Session "1" *-- "*" File : "contains logically"
     Queue "1" *-- "*" Command : stores
-    ExecutionResult "1" *-- "*" File : references_via_fileIds
+    ExecutionResult "1" *-- "*" File : "references via fileIds"
     
     %% 依賴關係 (uses) - Server-centric design
-    Server ..> Command : creates_manages
-    Server ..> ExecutionResult : creates_stores
-    Server ..> File : creates_manages
-    Server ..> Session : creates_manages
-    Server ..> Queue : creates_manages
-    Command ..> ExecutionResult : produces_when_executed
-    ExecutionResult ..> File : references_via_fileIds
-    File ..> Session : belongs_to_via_sessionId
-    Command ..> Session : belongs_to_via_sessionId
+    Server ..> Command : "creates manages"
+    Server ..> ExecutionResult : "creates stores"
+    Server ..> File : "creates manages"
+    Server ..> Session : "creates manages"
+    Server ..> Queue : "creates manages"
+    Command ..> ExecutionResult : "produces when executed"
+    ExecutionResult ..> File : "references via fileIds"
+    File ..> Session : "belongs to via sessionId"
+    Command ..> Session : "belongs to via sessionId"
     
     %% External consumers (not implemented in this system)
-    class AIAssistant["AIAssistant<br/>(External Consumer)"] {
+    class AIAssistant {
         <<external>>
         +HTTP API calls to Server
     }
     
-    class Client["Client<br/>(External Consumer)"] {
+    class Client {
         <<external>>
         +HTTP polling to Server
         +Command execution locally
     }
     
+    %% Add notes for external consumers
+    note for AIAssistant "External Consumer<br/>Not implemented in this system"
+    note for Client "External Consumer<br/>Not implemented in this system"
+    
     %% External API relationships
-    AIAssistant -.-> Server : HTTP_API_calls
-    Client -.-> Server : HTTP_polling
+    AIAssistant --> Server : "HTTP API calls"
+    Client --> Server : "HTTP polling"
 ```
 
 ---
