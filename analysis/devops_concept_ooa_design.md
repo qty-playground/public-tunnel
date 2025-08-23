@@ -19,7 +19,7 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（11個核心實作類別）：
+**建立分類體系**（10個核心實作類別）：
 
 | 類別名稱 | 歸屬名詞概念 | 核心職責 |
 |---------|-------------|----------|
@@ -31,13 +31,13 @@
 | **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案存儲和傳輸管理 |
 | **Session** | session、session空間、不同的session | 會話隔離和協作空間 |
 | **Queue** | command queue、FIFO command queue、專屬queue | 指令佇列和順序管理 |
-| **Infrastructure** | 機器、服務器、Web前端、API後端、資料庫服務器 | 基礎設施的抽象表示 |
 | **ExecutionMode** | 執行模式、同步、非同步 | 執行策略和模式控制 |
 | **Communication** | HTTP polling機制、主動polling、polling | 通訊協定和連線管理 |
 
 **移除的抽象概念**：
 - **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
 - **Environment**：遠端環境、本機環境、生產環境 → 抽象概念，Client啟動的運行位置，不需要實作
+- **Infrastructure**：機器、服務器、Web前端、API後端、資料庫服務器 → 實體資源，隱藏在Client內部，不屬於系統設計範圍
 
 ### 微小概念剔除分析
 
@@ -52,6 +52,7 @@
 - 本機環境 → Client運行的抽象位置，不實作
 - 生產環境 → Client運行的抽象位置，不實作
 - 環境資訊 → 由Client直接收集，不需要Environment類別
+- 基礎設施資訊 → 實體資源由Client管理，系統不需知道具體細節
 - 關鍵斷點 → 用系統架構設計表示
 - 瓶頸 → 用 Communication.isConnectionActive() 屬性表示
 - 自動化情境收集循環 → 用整體系統行為表示
@@ -66,7 +67,7 @@
 - 完全隔離 → 用 Session.isolateFromOthers() 架構設計表示
 - 唯一識別 → 用各類別的 ID 屬性表示
 
-**保留原則驗證**：所有影響業務邏輯、系統架構或數據結構的概念均已保留在13個核心類別中。
+**保留原則驗證**：所有影響業務邏輯、系統架構或數據結構的概念均已保留在10個核心類別中。
 
 ---
 
@@ -100,7 +101,7 @@ Client (客戶端)
 │       └── 指令獲取 → FIFO順序
 ├── 執行處理 →
 │   ├── Command (指令)
-│   │   └── 本地執行 → Infrastructure (基礎設施)
+│   │   └── 本地執行 → 系統指令執行
 │   └── ExecutionResult (執行結果)
 │       └── 結果回報 → 成功/錯誤+檔案
 └── 協作模式 →
@@ -187,7 +188,6 @@ class Client {
     +boolean isConnected()                                   // 連線狀態檢查
     +void collaborateInSession(Session session)              // 會話協作
     +void sendHeartbeat()                                    // 發送心跳
-    +Infrastructure getLocalInfrastructure()                 // 獲取本地基礎設施資訊
 }
 ```
 
@@ -230,7 +230,7 @@ class Command {
     +void switchToAsync()                                // 切換到非同步
     +String getTargetClient()                            // 取得目標客戶端
     +boolean exceedsThreshold(long threshold)            // 超過門檻檢查
-    +ExecutionResult execute(Infrastructure infrastructure) // 在基礎設施上執行指令
+    +ExecutionResult execute()                              // 執行指令
     +void submitTo(Server server)                        // 提交到服務器
 }
 ```
@@ -323,23 +323,6 @@ class Queue {
 ```
 
 
-### Infrastructure (基礎設施)
-```java
-class Infrastructure {
-    // 屬性（從關係推導）
-    -String serverId
-    -String serverType
-    -String status
-    -boolean requiresSSH
-    
-    // 方法（從動詞轉換）
-    +boolean isOnline()                           // 線上狀態檢查
-    +String checkSystemStatus()                   // 檢查系統狀態
-    +void executeCommand(Command command)         // 執行指令
-    +String getServerType()                       // 取得服務器類型
-    +boolean requiresSSH()                        // SSH 需求檢查
-}
-```
 
 ### ExecutionMode (執行模式)
 ```java
@@ -397,7 +380,6 @@ class Communication {
 | Session | *-- | File | 1 : * | 會話包含多個檔案 |
 | Queue | *-- | Command | 1 : * | 佇列儲存多個指令 |
 | ExecutionResult | *-- | File | 1 : * | 執行結果包含附件檔案 |
-| Client | *-- | Infrastructure | 1 : * | 客戶端管理本地基礎設施 |
 
 ### 依賴關係 (uses, ..>)
 
@@ -412,14 +394,12 @@ class Communication {
 | Client | ..> | Communication | 客戶端使用通訊協定 |
 | ExecutionResult | ..> | Server | 執行結果回報到伺服器 |
 | File | ..> | AIAssistant | 檔案被AI助手管理 |
-| Infrastructure | ..> | Client | 基礎設施被客戶端控制 |
 
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
 - [x] 一個AI助手在同一時間只能有一個執行模式 (1:1)
 - [x] 每個客戶端有自己專屬的指令佇列 (1:1)
-- [x] 一個客戶端可以管理多個本地基礎設施 (1:*)
 - [x] 一個伺服器可以管理多個隔離的會話 (1:*)
 
 **數據一致性驗證**：
@@ -468,7 +448,6 @@ classDiagram
         +boolean isConnected()
         +void collaborateInSession(Session session)
         +void sendHeartbeat()
-        +Infrastructure getLocalInfrastructure()
     }
     
     class Server {
@@ -499,7 +478,7 @@ classDiagram
         +void switchToAsync()
         +String getTargetClient()
         +boolean exceedsThreshold(long threshold)
-        +ExecutionResult execute(Infrastructure infrastructure)
+        +ExecutionResult execute()
         +void submitTo(Server server)
     }
     
@@ -566,18 +545,6 @@ classDiagram
         +void maintainedBy(Server server)
     }
     
-    class Infrastructure {
-        -String serverId
-        -String serverType
-        -String status
-        -boolean requiresSSH
-        +boolean isOnline()
-        +String checkSystemStatus()
-        +void executeCommand(Command command)
-        +String getServerType()
-        +boolean requiresSSH()
-        +void controlledBy(Client client)
-    }
     
     class ExecutionMode {
         -String modeName
@@ -612,7 +579,6 @@ classDiagram
     %% 聚合關係 (has-a)
     AIAssistant "1" *-- "1" ExecutionMode : uses
     Client "1" *-- "1" Queue : owns
-    Client "1" *-- "*" Infrastructure : manages
     Server "1" *-- "*" Session : manages
     Session "1" *-- "*" File : contains
     Queue "1" *-- "*" Command : stores
@@ -628,7 +594,6 @@ classDiagram
     Client ..> Communication : uses
     ExecutionResult ..> Server : reports_to
     File ..> AIAssistant : managed_by
-    Infrastructure ..> Client : controlled_by
 ```
 
 ---
@@ -653,7 +618,7 @@ classDiagram
   - 多重性約束符合業務邏輯需求
 
 - [x] **多重性約束符合業務規則**
-  - 1:* 關係：Client-Infrastructure, Server-Session, Session-File 等
+  - 1:* 關係：Server-Session, Session-File, Queue-Command 等
   - 1:1 關係：AIAssistant-ExecutionMode, Client-Queue
   - 所有約束都經過業務規則驗證
 
@@ -661,9 +626,8 @@ classDiagram
 
 - [x] **職責單一性 (Single Responsibility)**
   - AIAssistant：專注智能分析和指令管理
-  - Client：專注遠端代理執行和通訊
+  - Client：專注遠端代理執行和通訊，內部處理基礎設施互動
   - Server：專注被動協調和資源管理
-  - Infrastructure：專注基礎設施資訊和執行能力
   - 每個類別都有明確且單一的核心職責
 
 - [x] **低耦合 (Low Coupling)**
@@ -703,7 +667,7 @@ classDiagram
 ## 總結
 
 ### 轉換成功驗證
-✅ **概念完整性**：67個原始名詞概念成功歸納為11個核心實作類別
+✅ **概念完整性**：67個原始名詞概念成功歸納為10個核心實作類別
 ✅ **關係準確性**：樹狀結構中的動詞關係準確轉換為類別方法和關聯
 ✅ **架構一致性**：OOA設計完全符合原始public-tunnel技術規格
 ✅ **實作可行性**：具體的方法簽名和屬性定義可直接用於開發
