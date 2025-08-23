@@ -1,0 +1,831 @@
+# Python Coding Style for Screaming Architecture
+
+## 核心哲學
+
+程式碼應該透過優秀的命名和清晰的結構來自我說明。如果命名夠好，就不需要註解。
+
+## 使用時機
+在所有 Python 程式碼開發階段使用，包括：
+- FastAPI 端點實作（主要商業邏輯實作層）
+- Domain Models（核心業務概念）
+- Repository 層（外部資料交換）
+- BDD Step Definitions
+- 測試程式碼
+
+## 重要的 Import 規則
+
+### 絕對 Import 規則
+**永遠使用絕對 import 來表達模組之間的關係**
+
+✅ **正確:**
+```python
+from public_tunnel.models.session import Session
+from public_tunnel.models.command import Command
+from public_tunnel.repositories.session_repository import SessionRepository
+from public_tunnel.routers.sessions import sessions_router
+```
+
+❌ **錯誤:**
+```python
+from .session import Session
+from ..models.command import Command
+```
+
+### 模組級別 Import
+**所有 import 必須在模組層級**
+
+✅ **正確:**
+```python
+from public_tunnel.models.session import Session
+from public_tunnel.models.exceptions import SessionNotFoundError
+
+def find_active_session_by_id(session_id: str) -> Session:
+    session = get_session_from_storage(session_id)
+    if not session:
+        raise SessionNotFoundError(f"Session {session_id} not found")
+    return session
+```
+
+## 自我說明的程式碼規則
+
+### 方法命名應該講述完整的故事
+```python
+# ✅ 優秀 - 業務意圖清楚
+def submit_command_to_available_client(
+    self, 
+    session_id: SessionId, 
+    command_content: CommandContent
+) -> CommandSubmissionResult:
+    active_session = self._find_active_session_by_id(session_id)
+    available_client = active_session.get_next_available_client()
+    command = Command.create_new_for_client(command_content, available_client.id)
+    available_client.assign_command(command)
+    return CommandSubmissionResult.success(command.id)
+
+# ❌ 不好 - 需要註解才能理解
+def process(self, session: str, cmd: str) -> str:
+    # Find session and check client availability
+    # Create command and assign to client
+    pass
+```
+
+### 業務規則方法
+```python
+class Client:
+    def can_accept_new_command(self) -> bool:
+        """業務規則：每個客戶端同時只能執行一個命令"""
+        return (self._status == ClientStatus.ONLINE and 
+                self._current_command is None)
+    
+    def mark_as_busy_with_command(self, command: Command) -> None:
+        """業務規則：客戶端狀態轉換"""
+        if self.has_active_command():
+            raise ClientBusyError("Client already executing command")
+        self._current_command = command
+        self._last_activity = datetime.utcnow()
+```
+
+## 型別提示強制要求
+
+**所有函數和變數必須有型別提示以確保清晰度**
+
+```python
+def create_new_session_for_client(client_info: ClientInfo) -> Session:
+    session_id: SessionId = SessionId.generate_new()
+    creation_time: datetime = datetime.utcnow()
+    return Session(session_id, client_info, creation_time)
+```
+
+## 資料結構規則
+
+### 使用 Domain Value Objects
+**永遠不要用字典來表達業務概念**
+
+✅ **正確:**
+```python
+@dataclass
+class ClientInfo:
+    hostname: str
+    operating_system: str
+    architecture: str
+    capabilities: List[str]
+
+@dataclass  
+class CommandSubmissionRequest:
+    session_id: SessionId
+    command_content: CommandContent
+    timeout_seconds: int
+```
+
+❌ **錯誤:**
+```python
+def create_client(client_data: dict) -> Client:  # dict 裡面有什麼？
+    pass
+```
+
+## FastAPI 特定規範
+
+### 路由定義
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+
+router = APIRouter(prefix="/api/sessions/{session_id}")
+
+class CommandRequest(BaseModel):
+    command: str
+    target_client: str
+    timeout: Optional[int] = 30
+
+class CommandResponse(BaseModel):
+    command_id: str
+    status: str
+    message: str
+
+@router.post("/commands", response_model=CommandResponse)
+async def submit_command(
+    session_id: str,
+    request: CommandRequest,
+    current_user: User = Depends(get_current_user)
+) -> CommandResponse:
+    """提交命令到指定的客戶端"""
+    pass
+```
+
+### 錯誤處理
+```python
+from fastapi import HTTPException, status
+
+# 使用標準 HTTP 狀態碼
+def validate_session_id(session_id: str) -> None:
+    if not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session ID is required"
+        )
+    
+    if not session_exists(session_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session {session_id} not found"
+        )
+```
+
+## BDD 測試程式碼規範
+
+### 重要原則：ScenarioContext 整合 TestClient  
+**ScenarioContext 直接依賴 TestClient，BDD 測試只需注入一個 context 參數**
+
+```python
+# conftest.py 中的 ScenarioContext 整合設計
+class ScenarioContext:
+    def __init__(self, test_client: TestClient):
+        self.test_client = test_client  # 直接整合 TestClient
+        self.phase = BDDPhase.GIVEN
+        self.session_id = "default"
+        self.client_id = None
+        self.response = None
+        # 其他測試狀態...
+
+@pytest.fixture
+def context() -> ScenarioContext:
+    """提供整合 TestClient 的 ScenarioContext"""
+    from public_tunnel.main import app
+    from public_tunnel.dependencies.providers import get_session_repository, get_command_validator
+    
+    # 測試專用依賴性
+    def get_test_session_repository() -> MockSessionRepository:
+        return MockSessionRepository()
+    
+    def get_test_command_validator() -> MockCommandValidator:
+        return MockCommandValidator()
+    
+    # 統一覆寫所有依賴性
+    app.dependency_overrides[get_session_repository] = get_test_session_repository
+    app.dependency_overrides[get_command_validator] = get_test_command_validator
+    
+    with TestClient(app) as client:
+        ctx = ScenarioContext(client)  # 直接注入 TestClient
+        yield ctx
+    
+    # 清理
+    app.dependency_overrides.clear()
+    ctx.cleanup()
+```
+
+### Step Definition 結構（單一參數設計）
+```python
+from pytest_bdd import given, when, then, parsers
+from conftest import BDDPhase
+
+# 注意：只需要 context 一個參數，不需要分別注入 test_client
+@given(parsers.parse('client "{client_id}" is registered and online'))
+def setup_registered_client(context, client_id: str) -> None:
+    """設定已註冊且線上的客戶端"""
+    context.client_id = client_id
+    # context.test_client 已經整合在 ScenarioContext 中
+    # 所有依賴性已經在 conftest.py 中統一配置
+
+@when(parsers.parse('I submit command "{command}" to client "{client_id}"'))
+def submit_command_to_client(context, command: str, client_id: str) -> None:
+    """提交命令到指定客戶端"""
+    context.phase = BDDPhase.WHEN
+    # 直接使用 context.test_client，簡潔明瞭
+    response = context.test_client.post(
+        f"/api/sessions/{context.session_id}/commands",
+        json={"command": command, "target_client": client_id}
+    )
+    context.response = response
+
+@then(parsers.parse('the command should be queued with status "{status}"'))
+def verify_command_status(context, status: str) -> None:
+    """驗證命令狀態"""
+    context.phase = BDDPhase.THEN
+    assert context.response.status_code == 200
+    response_data = context.response.json()
+    assert response_data["status"] == status
+```
+
+### Step Registration 範例
+```python
+# tests/features/{feature}/steps.py
+from pytest_bdd import scenarios, given, when, then
+from . import given_client_registered, when_submit_command, then_verify_status
+
+scenarios('story.feature')
+
+@given('client "test-client" is registered and online')
+def step_given_client_registered(context):
+    return given_client_registered.execute(context, client_id="test-client")
+
+@when('I submit command "ls -la" to client "test-client"')  
+def step_when_submit_command(context):
+    return when_submit_command.execute(context, command="ls -la", client_id="test-client")
+
+@then('the command should be queued with status "pending"')
+def step_then_verify_status(context):
+    return then_verify_status.execute(context, expected_status="pending")
+```
+
+### BDD 測試實作模式
+
+#### Given Steps: 前置條件設定（兩種方式）
+```python
+# 方式1: 透過 API 設定（推薦用於使用者可見的操作）
+# tests/features/{feature_name}/given_client_registered.py
+def execute(context, client_id: str) -> None:
+    """Given step: 透過 API 註冊客戶端"""
+    context.client_id = client_id
+    # 使用 HTTP API 設定前置條件
+    setup_response = context.test_client.post(
+        f"/api/sessions/{context.session_id}/clients",
+        json={"client_id": client_id, "status": "online"}
+    )
+    assert setup_response.status_code == 201
+
+# 方式2: 透過 Repository 直接設定狀態（用於複雜的測試資料）
+# tests/features/{feature_name}/given_session_has_multiple_clients.py
+def execute(context, client_count: int) -> None:
+    """Given step: 透過 Repository 設定多個客戶端狀態"""
+    from conftest import get_test_session_repository
+    
+    session_repo = get_test_session_repository()
+    session = session_repo.find_by_id(context.session_id)
+    
+    # 直接操作狀態，避免複雜的 API 呼叫序列
+    for i in range(client_count):
+        client_id = f"client-{i}"
+        session.add_client(Client(client_id, status="online"))
+    
+    session_repo.save(session)
+    context.client_count = client_count
+```
+
+#### When Steps: 業務動作觸發（總是 HTTP API）
+```python
+# tests/features/{feature_name}/when_submit_command.py  
+def execute(context, command: str, client_id: str) -> None:
+    """When step: 觸發業務動作
+    
+    重要原則：
+    - When steps 總是透過 HTTP API 觸發
+    - 模擬真實使用者操作
+    - 不直接操作 Repository 或內部狀態
+    """
+    context.phase = BDDPhase.WHEN
+    # 永遠使用 HTTP API 觸發業務行為
+    response = context.test_client.post(
+        f"/api/sessions/{context.session_id}/commands",
+        json={"command": command, "target_client": client_id}
+    )
+    context.response = response
+```
+
+#### Then Steps: 雙重驗證（API + State）
+```python
+# tests/features/{feature_name}/then_command_queued_successfully.py
+def execute(context, expected_status: str) -> None:
+    """Then step: 驗證結果
+    
+    雙重驗證原則：
+    1. API 等級驗證：HTTP response 正確性
+    2. State 等級驗證：Repository 狀態正確性
+    """
+    context.phase = BDDPhase.THEN
+    
+    # 1. API 等級驗證：驗證 HTTP 回應
+    assert context.response.status_code == 200
+    response_data = context.response.json()
+    assert response_data["status"] == expected_status
+    assert "command_id" in response_data
+    
+    # 2. State 等級驗證：驗證實際狀態變更
+    from conftest import get_test_session_repository, get_test_command_repository
+    
+    session_repo = get_test_session_repository()
+    command_repo = get_test_command_repository()
+    
+    # 驗證 command 的具體內容（不只是數量）
+    command_id = response_data["command_id"]
+    command = command_repo.find_by_id(command_id)
+    assert command.status == expected_status
+    assert command.client_id == context.client_id
+    assert command.content == "ls -la"  # 驗證具體命令內容
+    assert command.session_id == context.session_id
+    assert command.created_at is not None
+    
+    # 驗證 session 中的具體命令隊列狀態
+    session = session_repo.find_by_id(context.session_id)
+    pending_commands = session.get_pending_commands_for_client(context.client_id)
+    assert len(pending_commands) == 1
+    assert pending_commands[0].id == command_id
+    assert pending_commands[0].content == "ls -la"
+    
+    # 驗證客戶端狀態具體變更
+    client = session.get_client_by_id(context.client_id) 
+    assert client.status == "online"
+    assert client.has_pending_commands() == True
+    assert client.get_next_pending_command().id == command_id
+```
+
+### 測試模式總結
+
+#### Given Steps 實作選擇
+- **API 設定**：適用於簡單的前置條件，模擬真實使用者操作
+- **Repository 設定**：適用於複雜的測試資料，直接建立所需狀態
+
+#### When Steps 實作原則  
+- **永遠使用 HTTP API**：確保測試真實的業務流程
+- **不操作內部狀態**：避免繞過業務邏輯
+
+#### Then Steps 驗證策略
+- **API 驗證**：確保 HTTP 回應正確（使用者看到的）
+- **State 驗證**：確保內部狀態正確（系統實際狀態）
+- **具體驗證**：驗證具體的資料內容，不只是數量或存在性
+- **完整驗證**：驗證所有相關的狀態變更和業務規則
+- **雙重保證**：既驗證外部契約又驗證內部一致性
+
+#### 驗證品質要求
+❌ **不好的驗證（模糊檢查）:**
+```python
+# 只檢查數量，不檢查內容
+assert len(session.pending_commands) == 1
+assert client.has_commands == True
+```
+
+✅ **好的驗證（具體檢查）:**
+```python
+# 檢查具體內容和狀態
+assert command.content == "ls -la"
+assert command.client_id == "test-client"
+assert command.status == "pending"
+assert pending_commands[0].id == command_id
+assert client.get_next_pending_command().content == "ls -la"
+```
+
+## 文件字串 (Docstrings)
+
+### 函數文件
+```python
+def process_session_command(
+    session_id: str, 
+    command: str, 
+    timeout: int = 30
+) -> Dict[str, Any]:
+    """處理 session 範圍內的命令執行
+    
+    Args:
+        session_id: 會話識別碼
+        command: 要執行的命令字串
+        timeout: 命令超時時間（秒），預設 30 秒
+        
+    Returns:
+        包含命令執行結果的字典，包括：
+        - command_id: 命令唯一識別碼
+        - status: 執行狀態 (pending/running/completed/failed)
+        - output: 命令輸出內容（如果有）
+        
+    Raises:
+        HTTPException: 當 session 不存在或命令格式錯誤時
+        TimeoutError: 當命令執行超時時
+    """
+    pass
+```
+
+### 類別文件
+```python
+class SessionManager:
+    """管理 AI Assistant 的會話狀態
+    
+    負責處理會話的建立、維護和清理工作。每個會話都是完全隔離的，
+    包含獨立的命令佇列、檔案工作空間和客戶端連接。
+    
+    Attributes:
+        active_sessions: 目前活躍的會話字典
+        session_timeout: 會話超時時間（秒）
+    """
+    pass
+```
+
+## 錯誤處理模式
+
+### 統一異常處理
+```python
+from enum import Enum
+from typing import Optional
+
+class ErrorCode(Enum):
+    SESSION_NOT_FOUND = "SESSION_NOT_FOUND"
+    COMMAND_TIMEOUT = "COMMAND_TIMEOUT"
+    CLIENT_OFFLINE = "CLIENT_OFFLINE"
+    INVALID_REQUEST = "INVALID_REQUEST"
+
+class PublicTunnelError(Exception):
+    """Public Tunnel 專案的基礎異常類別"""
+    def __init__(
+        self, 
+        message: str, 
+        error_code: ErrorCode,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        self.message = message
+        self.error_code = error_code
+        self.details = details or {}
+        super().__init__(self.message)
+
+# 使用範例
+def get_session(session_id: str) -> Session:
+    session = find_session(session_id)
+    if not session:
+        raise PublicTunnelError(
+            message=f"Session {session_id} not found",
+            error_code=ErrorCode.SESSION_NOT_FOUND,
+            details={"session_id": session_id}
+        )
+    return session
+```
+
+## Screaming Architecture 模組組織
+
+### 專案結構（表達業務概念）
+```
+public_tunnel/
+├── __init__.py
+├── main.py                    # FastAPI 應用程式進入點
+├── models/                    # 核心 Domain Models（業務概念）
+│   ├── __init__.py
+│   ├── session.py            # Session 實體和值物件
+│   ├── command.py            # Command 實體和值物件
+│   ├── client.py             # Client 實體和值物件
+│   └── exceptions.py         # 業務異常
+├── repositories/              # 外部資料交換層（可選）
+│   ├── __init__.py
+│   ├── session_repository.py
+│   └── command_repository.py
+├── routers/                   # Web 層（主要商業邏輯實作在這裡）
+│   ├── __init__.py
+│   ├── session_create_new.py         # POST /sessions - 建立新會話
+│   ├── session_get_status.py         # GET /sessions/{id} - 取得會話狀態  
+│   ├── command_submit_to_client.py   # POST /sessions/{id}/commands - 提交命令
+│   ├── command_get_result.py         # GET /sessions/{id}/commands/{cmd_id} - 取得命令結果
+│   ├── client_register_to_session.py # POST /sessions/{id}/clients - 註冊客戶端
+│   ├── client_poll_commands.py       # GET /sessions/{id}/clients/{client_id}/commands - 客戶端輪詢
+│   ├── file_upload_to_session.py     # POST /sessions/{id}/files - 上傳檔案
+│   └── file_download_from_session.py # GET /sessions/{id}/files/{file_id} - 下載檔案
+└── dependencies/               # Dependency Injection
+    ├── __init__.py
+    └── providers.py
+```
+
+### Router 檔案命名規則（業務邏輯分組 + 單一功能）
+**格式：`{業務邏輯}_{具體動作}.py` - 既能分組又能表達單一責任**
+
+✅ **正確的命名（Screaming Architecture + 業務分組）:**
+```python
+# 會話相關業務邏輯
+# routers/session_create_new.py           # POST /sessions
+# routers/session_get_status.py           # GET /sessions/{id}
+# routers/session_delete.py               # DELETE /sessions/{id}
+
+# 命令相關業務邏輯  
+# routers/command_submit_to_client.py     # POST /sessions/{id}/commands
+# routers/command_get_result.py           # GET /sessions/{id}/commands/{cmd_id}
+# routers/command_cancel_execution.py     # DELETE /sessions/{id}/commands/{cmd_id}
+
+# 客戶端相關業務邏輯
+# routers/client_register_to_session.py  # POST /sessions/{id}/clients
+# routers/client_poll_commands.py         # GET /sessions/{id}/clients/{client_id}/commands
+# routers/client_update_status.py         # PUT /sessions/{id}/clients/{client_id}/status
+
+# 檔案相關業務邏輯
+# routers/file_upload_to_session.py       # POST /sessions/{id}/files
+# routers/file_download_from_session.py   # GET /sessions/{id}/files/{file_id}
+```
+
+**優點：**
+- 一看就知道業務領域（session, command, client, file）
+- 一看就知道具體功能（create, get, submit, poll）
+- 檔案列表會自動按業務邏輯分組排序
+
+❌ **錯誤的命名:**
+```python
+# routers/create_session.py        # 缺少業務邏輯前綴，難以分組
+# routers/submit_command.py        # 缺少業務邏輯前綴，難以分組  
+# routers/session_management.py    # 違反單一責任，包含多個功能
+# routers/api.py                  # 完全沒有表達業務意圖
+```
+
+### 統一依賴性注入實作（Unified Providers Pattern）
+
+#### 重要原則：統一 providers.py 管理
+**所有依賴性提供者統一在 dependencies/providers.py 中管理，確保一致性和可測試性**
+
+#### 生產環境依賴性提供者（統一管理）
+```python
+# dependencies/providers.py
+from typing import Annotated
+from fastapi import Depends
+from public_tunnel.repositories.session_repository import SessionRepository
+from public_tunnel.repositories.command_repository import CommandRepository
+
+def get_session_repository() -> SessionRepository:
+    """統一的 Session Repository 提供者
+    
+    所有 router 共享相同實例，確保一致性
+    在 conftest.py 中可統一覆寫進行測試
+    """
+    return SessionRepository(connection_string=DATABASE_URL)
+
+def get_command_repository() -> CommandRepository:
+    """統一的 Command Repository 提供者"""
+    return CommandRepository(connection_string=DATABASE_URL)
+
+def get_command_validator() -> CommandValidator:
+    """統一的命令驗證服務提供者"""
+    return CommandValidator()
+
+# Type aliases for cleaner router signatures
+SessionRepositoryDep = Annotated[SessionRepository, Depends(get_session_repository)]
+CommandRepositoryDep = Annotated[CommandRepository, Depends(get_command_repository)]
+CommandValidatorDep = Annotated[CommandValidator, Depends(get_command_validator)]
+```
+
+#### Router 中使用統一依賴性注入
+```python
+# routers/command_submit_to_client.py
+from fastapi import APIRouter
+from public_tunnel.dependencies.providers import SessionRepositoryDep, CommandValidatorDep
+
+router = APIRouter()
+
+@router.post("/sessions/{session_id}/commands")
+async def submit_command_to_available_client(
+    session_id: str,
+    request: CommandSubmissionRequest,
+    session_repo: SessionRepositoryDep,  # 使用統一的 Type Alias
+    command_validator: CommandValidatorDep  # 使用統一的 Type Alias
+) -> CommandSubmissionResponse:
+    """提交命令到指定會話的可用客戶端"""
+    # 驗證命令
+    command_validator.validate_command_content(request.command_content)
+    
+    # 主要商業邏輯實作
+    active_session = session_repo.find_active_session_by_id(session_id)
+    available_client = active_session.get_next_available_client()
+    command_result = available_client.execute_command(request.command_content)
+    return CommandSubmissionResponse.success(command_result.id)
+```
+
+#### main.py 架構（只註冊 Router）
+```python
+# main.py
+from fastapi import FastAPI
+from public_tunnel.routers import command_submit_to_client, session_create_new
+
+app = FastAPI(
+    title="Public Tunnel API",
+    description="A network tunneling solution for AI assistants"
+)
+
+# 只註冊 router，不直接使用 providers
+app.include_router(command_submit_to_client.router)
+app.include_router(session_create_new.router)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+```
+
+#### 測試環境統一依賴性覆寫（conftest.py 管理）
+```python
+# conftest.py
+@pytest.fixture
+def test_client() -> TestClient:
+    """
+    提供統一的 TestClient，所有依賴性注入覆寫都在此處理
+    
+    統一 Providers 的測試優勢：
+    - 只需要在一個地方覆寫所有依賴性
+    - 所有使用相同 provider 的 router 自動使用測試版本
+    - 確保測試環境的一致性和可預測性
+    - 避免個別 router 中分散的 provider 覆寫
+    """
+    from public_tunnel.main import app
+    from public_tunnel.dependencies.providers import (
+        get_session_repository, 
+        get_command_repository,
+        get_command_validator
+    )
+    
+    # 測試專用的依賴性實作
+    def get_test_session_repository() -> MockSessionRepository:
+        return MockSessionRepository()
+    
+    def get_test_command_repository() -> MockCommandRepository:
+        return MockCommandRepository()
+    
+    def get_test_command_validator() -> MockCommandValidator:
+        return MockCommandValidator()
+    
+    # 統一覆寫所有依賴性 - 影響所有使用這些 provider 的 router
+    app.dependency_overrides[get_session_repository] = get_test_session_repository
+    app.dependency_overrides[get_command_repository] = get_test_command_repository
+    app.dependency_overrides[get_command_validator] = get_test_command_validator
+    
+    with TestClient(app) as client:
+        yield client
+    
+    # 清理依賴性覆寫
+    app.dependency_overrides.clear()
+
+# 對比：如果是分散式 providers，需要這樣覆寫（不推薦）：
+# from public_tunnel.routers.session_create_new import get_session_repository as repo1
+# from public_tunnel.routers.command_submit import get_session_repository as repo2  
+# app.dependency_overrides[repo1] = get_test_session_repository
+# app.dependency_overrides[repo2] = get_test_session_repository  # 重複且容易遺漏
+```
+
+## 效能和安全考量
+
+### 資料驗證
+```python
+from pydantic import BaseModel, validator, Field
+from typing import List
+
+class CommandRequest(BaseModel):
+    command: str = Field(..., min_length=1, max_length=1000)
+    target_client: str = Field(..., regex=r'^[a-zA-Z0-9_-]+$')
+    timeout: int = Field(default=30, ge=1, le=300)
+    
+    @validator('command')
+    def validate_command_safety(cls, v):
+        # 檢查危險命令
+        dangerous_patterns = ['rm -rf', 'sudo', '&&', '||']
+        if any(pattern in v.lower() for pattern in dangerous_patterns):
+            raise ValueError('Command contains potentially dangerous operations')
+        return v
+```
+
+### 記錄和監控
+```python
+import logging
+from functools import wraps
+
+logger = logging.getLogger(__name__)
+
+def log_api_call(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        logger.info(f"API call: {func.__name__} with args={args}, kwargs={kwargs}")
+        try:
+            result = await func(*args, **kwargs)
+            logger.info(f"API call successful: {func.__name__}")
+            return result
+        except Exception as e:
+            logger.error(f"API call failed: {func.__name__}, error: {str(e)}")
+            raise
+    return wrapper
+```
+
+## 開發工具整合
+
+### 推薦工具配置
+```bash
+# requirements-dev.txt
+black==23.9.1          # 程式碼格式化
+isort==5.12.0          # import 排序  
+mypy==1.5.1            # 靜態型別檢查
+flake8==6.1.0          # 程式碼品質檢查
+pytest==7.4.2         # 測試框架
+pytest-cov==4.1.0     # 測試覆蓋率
+```
+
+### pre-commit 配置 (.pre-commit-config.yaml)
+```yaml
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+    hooks:
+      - id: mypy
+```
+
+## Screaming Architecture 關鍵原則
+
+1. **絕對 Import 規則** - 清楚的模組關係
+2. **自我說明的命名** - 業務領域語言
+3. **不需要註解** - 程式碼自己解釋自己
+4. **強制型別提示** - 契約清晰度
+5. **Value Objects 取代字典** - 領域建模
+6. **業務方法命名** - 表達領域規則
+7. **細粒度檔案分割** - 單一責任原則
+8. **Dependency Injection** - 模組間解耦
+
+## 驗證檢查點
+
+### 程式碼品質檢查
+- [ ] 使用絕對 import（不使用相對 import）
+- [ ] 檔案命名表達清楚的業務功能
+- [ ] 方法命名講述完整業務故事
+- [ ] 所有函數都有型別提示
+- [ ] 使用 Value Objects 而非字典
+- [ ] 程式碼不需要註解就能理解
+
+### Screaming Architecture 檢查
+- [ ] models/ 只包含核心 Domain Models
+- [ ] routers/ 檔案使用 `{業務邏輯}_{具體動作}.py` 格式命名
+- [ ] 每個 router 檔案只對應一個 API 端點
+- [ ] 檔案列表能清楚看出業務邏輯分組
+- [ ] 主要商業邏輯實作在 router 層
+- [ ] Repository 層使用 Dependency Injection
+- [ ] 每個模組職責單一且清楚
+
+### 統一依賴性注入架構檢查
+- [ ] 所有依賴性提供者統一在 dependencies/providers.py 中定義
+- [ ] Router 只 import providers，不定義自己的 provider 函數
+- [ ] main.py 只註冊 router，不直接使用 providers
+- [ ] 使用 Type Aliases（如 SessionRepositoryDep）簡化 router 簽名
+- [ ] 相同服務在所有 router 間使用相同的 provider 函數
+
+### 測試環境統一覆寫檢查  
+- [ ] ScenarioContext 直接整合 TestClient（單一參數設計）
+- [ ] 所有 dependency overrides 只在 conftest.py 中統一處理
+- [ ] 一個 provider 覆寫影響所有使用該 provider 的 router
+- [ ] 個別測試檔案不覆寫依賴性
+- [ ] BDD step definitions 只需要 context 一個參數
+- [ ] context.test_client 已完整配置所有依賴性
+- [ ] 測試環境的依賴性配置一致且可預測
+
+### BDD 測試實作模式檢查
+- [ ] Given steps 使用 API 或 Repository 設定前置條件
+- [ ] When steps 永遠透過 HTTP API 觸發業務動作
+- [ ] Then steps 實作雙重驗證（API + State）
+- [ ] Given 的 Repository 操作用於複雜測試資料設定
+- [ ] When 不直接操作 Repository 或內部狀態
+- [ ] Then 驗證 HTTP response 和內部狀態一致性
+
+### BDD 驗證品質檢查
+- [ ] 驗證具體的資料內容，不只是數量或存在性
+- [ ] 檢查所有相關物件的具體屬性值
+- [ ] 驗證業務規則的完整狀態變更
+- [ ] 避免模糊的 `len()` 或 `has_*` 檢查
+- [ ] 使用具體的相等性斷言（`==`, `is`, `in`）
+- [ ] 驗證物件間的關聯關係正確性
+
+### FastAPI 特定檢查
+- [ ] 端點函數名稱表達業務行為
+- [ ] Request/Response models 使用領域命名
+- [ ] 相依性注入提供者命名清楚
+- [ ] HTTP 狀態碼使用標準常數
+
+---
+
+**使用方式**: 在所有 Python 程式碼開發過程中參考此規範，重點是讓程式碼架構直接表達業務意圖，不需要額外說明就能理解系統在做什麼。

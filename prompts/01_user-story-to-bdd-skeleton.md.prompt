@@ -10,14 +10,30 @@
 2. 分析該 User Story 的 Acceptance Criteria
 3. 識別需要的 Given/When/Then steps
 
-### Step 2: 名稱轉換
+### Step 2: 檢查環境和配置
+1. 確保基礎目錄結構：
+   ```bash
+   # 檢查並建立必要的 __init__.py
+   touch tests/__init__.py
+   touch tests/features/__init__.py
+   ```
+
+2. 檢查並設定 pytest 配置以支援 steps.py：
+   - 檢查 `pytest.ini` 中的 `python_files` 設定
+   - 確認是否包含 `steps.py`，如果沒有則添加：
+     ```ini
+     python_files = test_*.py steps.py
+     ```
+   - 如果添加後測試仍無法發現，檢查所有目錄是否都有 `__init__.py`
+
+### Step 3: 名稱轉換
 將 User Story 編號和描述轉換為 Python module 合法的目錄名稱：
 - 全部轉成小寫
 - 非英文及數字的字元都轉成 `_`
 - 編號中的 `-` 直接去掉
 - 例如：`US-001: Admin Session List Query` → `us001_admin_session_list_query`
 
-### Step 3: 建立目錄結構
+### Step 4: 建立目錄結構
 在 `tests/features/` 下建立：
 ```
 tests/features/{story_converted_name}/
@@ -29,7 +45,7 @@ tests/features/{story_converted_name}/
 └── then_*.py           # Then steps 實作檔案
 ```
 
-### Step 4: 建立檔案內容
+### Step 5: 建立檔案內容
 
 #### `__init__.py`
 ```python
@@ -53,50 +69,62 @@ Feature: [從 User Story 提取的 Feature 名稱]
 
 #### Individual Step 實作檔案 (例如 `given_client_is_registered.py`)
 ```python
-def execute(context, *args):
+def execute(context):
     # TODO: implement the actual step logic
+    # 注意：根據需求調整函數簽名：
+    # 1. 如果 step 有參數傳入：execute(context, param1, param2)
+    # 2. 如果內部實作需要額外參數：execute(context, **kwargs) 或自定義參數
     raise NotImplementedError("Step implementation not ready yet")
 ```
 
 #### `steps.py` (Step 註冊檔案)
 ```python
-from pytest_bdd import given, when, then, parsers
-from . import given_*  # 根據實際檔案名稱 import
-from . import when_*   # 根據實際檔案名稱 import  
-from . import then_*   # 根據實際檔案名稱 import
+from pytest_bdd import scenarios, given, when, then
+# 遵循絕對 import 規則 - 不使用相對 import
+from tests.features.{feature_name} import given_*  # 根據實際檔案名稱 import
+from tests.features.{feature_name} import when_*   # 根據實際檔案名稱 import  
+from tests.features.{feature_name} import then_*   # 根據實際檔案名稱 import
 
-@given(parsers.parse('[實際的 given step 文字]'))
-def step_given_something(context, *args):
-    return given_*.execute(context, *args)
+# Load scenarios from feature file
+scenarios('story.feature')
 
-@when(parsers.parse('[實際的 when step 文字]'))
-def step_when_something(context, *args):
-    return when_*.execute(context, *args)
+@given('[實際的 given step 文字]')
+def step_given_something(context):
+    return given_*.execute(context)
+
+@when('[實際的 when step 文字]')
+def step_when_something(context):
+    return when_*.execute(context)
 
 @then('[實際的 then step 文字]')
 def step_then_something(context):
     return then_*.execute(context)
 ```
 
-### Step 5: 驗證測試發現
+### Step 6: 驗證測試發現
 執行以下指令確保 pytest 可以發現新建立的測試：
 ```bash
 pytest tests/features/ --collect-only
 ```
 
 ## 重要注意事項
-1. 所有新建立的 scenario 必須標記 `@skip`
-2. 所有 step 實作都使用 `NotImplementedError`
-3. 檔案名稱必須符合 Python module 命名規範
-4. `steps.py` 只負責註冊，實際邏輯在獨立的 step 檔案中
-5. 每個 step 實作檔案都有標準的 `execute(context, *args)` 函數
+1. 基礎結構：確保 `tests/__init__.py` 和 `tests/features/__init__.py` 存在
+2. pytest 配置：確保 `pytest.ini` 的 `python_files` 包含 `steps.py`
+3. scenarios 載入：必須在 `steps.py` 中加入 `scenarios('story.feature')` 
+4. 標記：所有新建立的 scenario 必須標記 `@skip`
+5. 實作骨架：所有 step 實作都使用 `NotImplementedError`
+6. 命名規範：檔案名稱必須符合 Python module 命名規範
+7. 職責分離：`steps.py` 只負責註冊，實際邏輯在獨立的 step 檔案中
+8. 函數簽名：每個 step 實作檔案都有基本的 `execute(context)` 函數，根據 step 參數或實作需求自行調整簽名
 
 ## 成功標準
 完成後應該達到：
+- [ ] 基礎 `__init__.py` 檔案存在
+- [ ] `pytest.ini` 的 `python_files` 包含 `steps.py`
 - [ ] 目錄結構正確建立
 - [ ] `story.feature` 正確反映 User Story
 - [ ] 所有需要的 step 實作檔案都已建立
-- [ ] `steps.py` 正確註冊所有 steps
+- [ ] `steps.py` 正確載入 scenarios 並註冊所有 steps
 - [ ] `pytest --collect-only` 可以發現測試
 - [ ] 所有 scenarios 標記 `@skip`
 - [ ] 所有實作使用 `NotImplementedError`

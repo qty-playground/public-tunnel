@@ -1,0 +1,36 @@
+# Public-Tunnel BDD 開發工作流程提示詞
+
+## 專案背景
+你正在協助開發 public-tunnel 專案，這是一個為 AI 助手設計的 network tunnel 解決方案。系統採用 BDD (Behavior Driven Development) 方法，使用 pytest-bdd 進行測試驅動開發。
+
+## 必讀文件
+請先使用 Read tool 載入以下關鍵文件：
+1. `docs/requirements/02_user_story.md` - 包含所有 User Stories
+2. `conftest.py` - BDD ScenarioContext 架構和測試設定  
+3. `tests/features/` 目錄 - 現有的 feature files 和測試結構
+
+## 開發工作流程
+
+### Phase 1: User Story 到 BDD Test Walking Skeleton
+使用獨立的提示詞：`@prompts/01_user-story-to-bdd-skeleton.md.prompt`
+
+### Phase 2: API Skeleton 建立  
+使用獨立的提示詞：`@prompts/02_api-skeleton-creation.md.prompt`
+
+### Phase 3: TDD 實作循環
+使用獨立的提示詞：`@prompts/03_tdd-implementation-cycle.md.prompt`
+
+## 程式碼編碼風格參考
+所有階段的程式碼實作都必須遵循統一的編碼風格標準，詳見：`@prompts/04_python-coding-style.md.prompt`
+
+編碼風格重點：
+- 統一依賴性注入架構（集中在 dependencies/providers.py）
+- 絕對 import 規則（不使用相對 import）
+- Screaming Architecture 檔案命名（業務功能導向）
+- 自我說明的程式碼（業務領域語言）
+
+## 成功標準
+- [ ] 所有 user story scenarios 通過 BDD 測試
+- [ ] 程式碼符合統一的編碼風格和架構標準
+- [ ] 依賴性注入使用統一的 providers 管理
+- [ ] 系統準備好與 AI assistant 整合

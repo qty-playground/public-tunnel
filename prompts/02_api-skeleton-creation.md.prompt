@@ -11,12 +11,12 @@
 4. `public_tunnel/models/` - 現有的 Pydantic models
 
 ## Python 編碼風格要求
-**遵循尖叫架構和自我文件化的編碼風格：**
-1. **絕對導入**：ALWAYS 使用絕對導入，不使用相對導入
-2. **自我文件化命名**：方法和類別名稱應該完整表達業務意圖
-3. **強制類型提示**：所有函數和變數都必須有類型提示
-4. **業務領域語言**：使用領域專用的術語命名
-5. **無註解代碼**：透過優秀命名讓代碼自我解釋
+遵循尖叫架構和自我文件化的編碼風格：
+1. 絕對導入：ALWAYS 使用絕對導入，不使用相對導入
+2. 自我文件化命名：方法和類別名稱應該完整表達業務意圖
+3. 強制類型提示：所有函數和變數都必須有類型提示
+4. 業務領域語言：使用領域專用的術語命名
+5. 無註解代碼：透過優秀命名讓代碼自我解釋
 
 ## Phase 2 目標
 
@@ -36,7 +36,7 @@
 
 ### 4. 模組化架構
 - 不直接在 `public_tunnel/main.py` 實作業務邏輯
-- 在 `public_tunnel/web/` 下建立獨立模組
+- 在 `public_tunnel/routers/` 下建立獨立模組
 - 每組相關的 API 端點一個模組
 
 ### 5. 尖叫架構命名
@@ -92,10 +92,10 @@ class CommandExecutionStatusResponse(BaseModel):
 ```
 
 ### Step 3: 建立 Web 模組
-在 `public_tunnel/web/` 下建立獨立功能模組，每個端點一個模組：
+在 `public_tunnel/routers/` 下建立獨立功能模組，每個端點一個模組：
 
 ```python
-# public_tunnel/web/submit_commands_to_clients.py
+# public_tunnel/routers/submit_commands_to_clients.py
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 from public_tunnel.models.command import SubmitCommandToClientRequest, CommandSubmissionResponse
@@ -114,7 +114,7 @@ async def submit_command_to_available_client_in_session(
 ```
 
 ```python  
-# public_tunnel/web/query_command_execution_status.py
+# public_tunnel/routers/query_command_execution_status.py
 from fastapi import APIRouter, HTTPException
 from public_tunnel.models.command import CommandExecutionStatusResponse
 
@@ -131,14 +131,63 @@ async def get_command_execution_status_from_session(
     )
 ```
 
-### Step 4: 註冊路由到主應用
+### Step 4: 依賴性注入設定（統一 Providers）
+在 `public_tunnel/dependencies/providers.py` 中定義統一的依賴性提供者：
+
+```python
+# public_tunnel/dependencies/providers.py
+from typing import Annotated
+from fastapi import Depends
+
+def get_session_repository():
+    """統一的 Session Repository 提供者
+    
+    所有 router 共享相同實例，在 conftest.py 中可統一覆寫
+    """
+    # TODO: 實際實作時會返回真實的 SessionRepository
+    pass
+
+def get_command_validator():
+    """統一的命令驗證服務提供者"""
+    # TODO: 實際實作時會返回真實的 CommandValidator
+    pass
+
+# Type aliases for cleaner router signatures
+SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
+CommandValidatorDep = Annotated[object, Depends(get_command_validator)]
+```
+
+### Step 5: 更新 Router 使用統一依賴性注入
+```python
+# public_tunnel/routers/submit_commands_to_clients.py
+from fastapi import APIRouter, HTTPException
+from public_tunnel.models.command import SubmitCommandToClientRequest, CommandSubmissionResponse
+from public_tunnel.dependencies.providers import SessionRepositoryDep, CommandValidatorDep
+
+router: APIRouter = APIRouter()
+
+@router.post("/api/sessions/{session_id}/commands", response_model=CommandSubmissionResponse)
+async def submit_command_to_available_client_in_session(
+    session_id: str,
+    command_request: SubmitCommandToClientRequest,
+    session_repo: SessionRepositoryDep,  # 統一依賴性注入
+    command_validator: CommandValidatorDep  # 統一依賴性注入
+) -> CommandSubmissionResponse:
+    # API Skeleton 階段：先回傳 501 錯誤
+    raise HTTPException(
+        status_code=501,
+        detail="Command submission to client not implemented yet"
+    )
+```
+
+### Step 6: 註冊路由到主應用（不使用 Providers）
 在 `public_tunnel/main.py` 中註冊所有模組：
 
 ```python
 from fastapi import FastAPI
-from typing import Dict, str
-from public_tunnel.web import submit_commands_to_clients
-from public_tunnel.web import query_command_execution_status
+from typing import Dict
+from public_tunnel.routers import submit_commands_to_clients
+from public_tunnel.routers import query_command_execution_status
 
 app: FastAPI = FastAPI(
     title="Public Tunnel API",
@@ -146,7 +195,7 @@ app: FastAPI = FastAPI(
     version="0.1.0"
 )
 
-# 註冊各個業務功能模組
+# main.py 只註冊 router，不直接使用 providers
 app.include_router(submit_commands_to_clients.router)
 app.include_router(query_command_execution_status.router)
 
@@ -159,7 +208,7 @@ async def get_api_health_status() -> Dict[str, str]:
     return {"status": "healthy"}
 ```
 
-### Step 5: 確保 BDD Tests 正確失敗
+### Step 7: 確保 BDD Tests 正確失敗
 BDD tests 應該因為收到 501 錯誤而失敗，這證明 API skeleton 階段完成：
 
 ```python
@@ -180,12 +229,9 @@ from typing import Dict, Any
 def execute(context) -> None:
     context.phase = BDDPhase.THEN
     
-    # 測試應該在這裡失敗，因為 API 回傳 501 Not Implemented
-    # 這個失敗證明 API skeleton 已正確建立
-    assert context.response.status_code == 200, f"Expected successful session list, got {context.response.status_code}"
-    
-    sessions_data: Dict[str, Any] = context.response.json()
-    assert "sessions" in sessions_data, "Response should contain sessions list"
+    # TODO: 在下一個 phase 修正為檢查 200 狀態碼
+    # 目前檢查 501 Not Implemented 以確認 API skeleton 正確建立
+    assert context.response.status_code == 501, f"Expected API skeleton with 501 status, got {context.response.status_code}"
 ```
 
 ## 架構原則
@@ -236,6 +282,13 @@ POST /api/sessions/{session_id}/files
 - [ ] 業務邏輯不在 main.py 中
 - [ ] 每個功能模組職責單一且明確
 - [ ] 模組名稱符合尖叫架構原則
+
+### 統一依賴性注入檢查
+- [ ] 所有 provider 函數定義在 dependencies/providers.py 中
+- [ ] Router 使用 Type Aliases (如 SessionRepositoryDep) 簡化簽名
+- [ ] main.py 只註冊 router，不直接使用 providers
+- [ ] 相同服務在所有 router 間使用相同的 provider 函數
+- [ ] API Skeleton 階段的 provider 函數使用 pass 或 TODO 註解
 
 ## 成功標準
 

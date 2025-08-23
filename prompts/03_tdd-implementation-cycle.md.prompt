@@ -1,0 +1,113 @@
+# TDD 實作循環提示詞
+
+## 使用時機
+當 API Skeleton 建立完成，且有 BDD scenarios 準備進入實作階段時使用。
+
+## 前置條件
+1. API Skeleton 已建立（透過 `@prompts/api-skeleton-creation.md.prompt`）
+2. BDD test scenarios 已準備就緒且標記為 `@skip`
+3. 測試環境可正常執行 `pytest -m wip`
+
+## BDD Step 實作責任分工
+
+### Given Steps - 狀態設定（可改變狀態）
+- 目的：建立測試前置條件
+- 責任：可以改變系統狀態
+- 實作順序：
+  1. 優先使用外部方法：透過 HTTP API 設定狀態（模擬真實使用者操作）
+  2. 必要時用內部方法：直接操作 Repository 設定複雜的測試資料
+
+### When Steps - 動作觸發（可改變狀態）
+- 目的：觸發要測試的業務動作
+- 責任：可以改變系統狀態
+- **實作限制：只能使用外部方法（HTTP API）**
+- 原則：模擬真實使用者操作，不直接操作內部 Repository
+
+### Then Steps - 結果驗證（只讀檢查）
+- 目的：驗證業務動作的結果
+- **責任：只能檢查狀態，不可改變狀態**
+- 驗證範圍：外部與內部狀態都要檢查
+  1. 外部狀態：HTTP response 正確性
+  2. 內部狀態：Repository 中的資料正確性
+
+## TDD 循環流程
+
+### Step 1: 選擇 Scenario
+1. 從 `tests/features/*.feature` 中選擇一個 scenario
+2. 移除該 scenario 的 `@skip` 標記
+3. 確保其他 scenarios 仍保持 `@skip`（維持專注）
+
+### Step 2: RED - 確認測試失敗
+```bash
+pytest -m wip -v
+```
+- 驗證測試失敗，且失敗原因符合預期（通常是 API 回傳 501 Not Implemented）
+- 確認失敗來自 API skeleton 的 HTTPException 501 回應
+- 理解測試失敗的具體原因和錯誤訊息
+
+### Step 3: GREEN Stage 1 - 最小可行實作（硬編碼）
+1. 假資料階段：在 API 層硬編碼能通過測試的回應
+   - 直接在 router 函數中回傳硬編碼的成功結果
+   - 完全不實作真實商業邏輯或依賴性注入
+   - 目標：僅讓測試通過 (綠燈)，驗證 API 結構正確
+   
+2. 執行測試：`pytest -m wip -v` 確認通過
+
+### Step 4: GREEN Stage 2 - 真實實作
+1. 商業邏輯階段：實作真實的功能
+   - 替換假資料為真實邏輯
+   - 處理邊界情況和錯誤狀況
+   - 使用統一依賴性注入：從 `dependencies/providers.py` 引入需要的服務
+   - 遵循 Screaming Architecture 和絕對 import 原則
+
+2. 執行完整測試：`pytest tests/` 確保沒有破壞其他功能
+
+### Step 5: REFACTOR - 程式碼品質改善
+1. 程式碼清理：
+   - 移除重複程式碼
+   - 改善變數命名（遵循業務領域語言）
+   - 抽取共用邏輯到服務層或統一的 providers
+   - 確保遵循 `@prompts/04_python-coding-style.md.prompt` 中的編碼規範
+
+2. 架構檢查：
+   - 驗證所有 import 使用絕對路徑
+   - 確認依賴性注入使用統一的 providers
+   - 檢查函數命名是否表達完整的業務故事
+   - 確保型別提示完整且正確
+
+3. 測試確認：每次重構後執行測試確保功能正常
+
+### Step 6: 完成驗證
+1. 執行 `pytest -m wip -v` 確認 scenario 完全通過
+2. 執行完整測試套件確認沒有回歸問題
+3. 準備進入下一個 scenario
+
+## 重要原則
+
+### 一次只專注一個 Scenario
+- 只有一個 scenario 移除 `@skip`
+- 其他 scenarios 保持跳過狀態
+
+### 小步快跑
+- GREEN Stage 1 先讓測試通過（假資料）
+- GREEN Stage 2 再實作真實邏輯
+- 每個階段都要執行測試驗證
+
+### 測試驅動
+- 不寫沒有對應測試的程式碼
+- 測試失敗 → 實作 → 測試通過 → 重構
+
+## 除錯指南
+
+### 測試一直失敗
+- 檢查 API 路由是否正確註冊
+- 確認請求格式是否符合 API 預期
+- 查看詳細錯誤訊息定位問題
+
+### 測試意外通過
+- 確認沒有舊的實作殘留
+- 檢查是否誤用了 mock 或 fixture
+
+### 重構後測試失敗
+- 立即回退到上一個可工作版本
+- 以更小的步驟進行重構
