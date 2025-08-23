@@ -123,30 +123,16 @@ class Server {
     -Map<String, Queue> clientQueues        // Client 佇列管理
     -Map<String, ExecutionResult> results   // 結果儲存
     -Map<String, File> files                // 檔案管理
-    -boolean passiveMode                     // 被動協調模式
     
-    // HTTP API 處理器
-    +HttpResponse handleCommandSubmit(HttpRequest request)    // 指令提交 API
-    +HttpResponse handleResultQuery(String commandId)        // 結果查詢 API
-    +HttpResponse handleFileUpload(HttpRequest request)      // 檔案上傳 API
-    +HttpResponse handleFileDownload(String fileId)         // 檔案下載 API
-    +HttpResponse handleClientPolling(String clientId)      // Client Polling API
-    +HttpResponse handleSessionQuery(String sessionId)      // Session 查詢 API
-    
-    // 業務邏輯協調
-    +Session createOrGetSession(String sessionId)           // Session 建立/取得
-    +void isolateSession(String sessionId)                  // Session 隔離
-    +void distributeCommand(Command command)                // 指令分發到 Queue
-    +ExecutionResult storeExecutionResult(String commandId, ExecutionResult result) // 結果儲存
-    +boolean determineExecutionMode(Command command)        // 執行模式判斷
-    +void trackClientPresence(String clientId)              // Client 狀態追蹤
-    +void maintainFIFOOrder(String clientId)               // FIFO 佇列維護
-    
-    // 資料結構管理
-    +Command createCommand(String content, String targetClient, String mode) // Command 建立
-    +File storeFile(String sessionId, String fileName, byte[] content) // File 儲存
-    +Queue getOrCreateQueue(String clientId)                // Queue 建立/取得
-    +void cleanupExpiredSessions()                          // Session 清理
+    // Core HTTP API Endpoints
+    +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)  // POST /api/session/{sessionId}/command
+    +HttpResponse getNextCommand(String sessionId, String clientId)                                  // GET /api/session/{sessionId}/client/{clientId}/next-command  
+    +HttpResponse submitResult(String sessionId, String commandId, String status, String output)    // POST /api/session/{sessionId}/result
+    +HttpResponse getResult(String sessionId, String commandId)                                      // GET /api/session/{sessionId}/result/{commandId}
+    +HttpResponse uploadFile(String sessionId, String fileName, byte[] content)                      // POST /api/session/{sessionId}/files
+    +HttpResponse downloadFile(String sessionId, String fileId)                                     // GET /api/session/{sessionId}/files/{fileId}
+    +HttpResponse getSessionInfo(String sessionId)                                                   // GET /api/session/{sessionId}
+    +HttpResponse getActiveClients(String sessionId)                                                // GET /api/session/{sessionId}/clients
 }
 ```
 
@@ -324,24 +310,14 @@ classDiagram
         -Map~String, Queue~ clientQueues
         -Map~String, ExecutionResult~ results
         -Map~String, File~ files
-        -boolean passiveMode
-        +HttpResponse handleCommandSubmit(HttpRequest request)
-        +HttpResponse handleResultQuery(String commandId)
-        +HttpResponse handleFileUpload(HttpRequest request)
-        +HttpResponse handleFileDownload(String fileId)
-        +HttpResponse handleClientPolling(String clientId)
-        +HttpResponse handleSessionQuery(String sessionId)
-        +Session createOrGetSession(String sessionId)
-        +void isolateSession(String sessionId)
-        +void distributeCommand(Command command)
-        +ExecutionResult storeExecutionResult(String commandId, ExecutionResult result)
-        +boolean determineExecutionMode(Command command)
-        +void trackClientPresence(String clientId)
-        +void maintainFIFOOrder(String clientId)
-        +Command createCommand(String content, String targetClient, String mode)
-        +File storeFile(String sessionId, String fileName, byte[] content)
-        +Queue getOrCreateQueue(String clientId)
-        +void cleanupExpiredSessions()
+        +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)
+        +HttpResponse getNextCommand(String sessionId, String clientId)
+        +HttpResponse submitResult(String sessionId, String commandId, String status, String output)
+        +HttpResponse getResult(String sessionId, String commandId)
+        +HttpResponse uploadFile(String sessionId, String fileName, byte[] content)
+        +HttpResponse downloadFile(String sessionId, String fileId)
+        +HttpResponse getSessionInfo(String sessionId)
+        +HttpResponse getActiveClients(String sessionId)
     }
     
     class Command {
@@ -476,10 +452,11 @@ classDiagram
   - Command, ExecutionResult, File, Session, Queue 核心資料結構完整建模
 
 - [x] **方法覆蓋所有關鍵業務流程**
-  - HTTP API 流程：AIAssistant HTTP calls → Server.handleCommandSubmit() → Server.distributeCommand() → Queue storage
-  - 執行結果流程：Client polling → Server.handleClientPolling() → Command retrieval → ExecutionResult storage
-  - 檔案管理流程：Server.handleFileUpload() → File.storeFile() → Session association → Server.handleFileDownload()
-  - 會話協作流程：Server.createOrGetSession() → Session.addClient() → multi-client collaboration
+  - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存到 targetClient 的 Queue
+  - 指令執行流程：Client → Server.getNextCommand() → 取得 Command → 本地執行 → Server.submitResult()
+  - 結果查詢流程：AIAssistant → Server.getResult() → 取得 ExecutionResult
+  - 檔案管理流程：Client/AIAssistant → Server.uploadFile()/downloadFile() → File 管理
+  - Session 協作流程：Server.getActiveClients() → 多 Client 協作資訊
 
 - [x] **關聯關係反映真實的系統架構**
   - 聚合關係準確反映 Server 的資料管理職責
@@ -525,10 +502,10 @@ classDiagram
 - [x] **檔案唯一識別**：File 資料結構支援 file-id 唯一性和重複處理
 
 **業務流程完整性**：
-- [x] **同步/非同步執行模式**：Server 根據 Command 屬性動態判斷執行模式
-- [x] **HTTP Polling 機制**：Server 的 handleClientPolling() API 支援 Client polling
-- [x] **多客戶端協作**：Session 支援多個 Client 在同一 session 內協作
-- [x] **檔案摘要和選擇性下載**：File 自動生成摘要，支援 HTTP API 選擇性下載
+- [x] **同步/非同步執行模式**：submitCommand() 接受 mode 參數，支援不同執行策略
+- [x] **Client 指令查詢機制**：getNextCommand() API 讓 Client 主動查詢待執行指令
+- [x] **多客戶端協作**：getActiveClients() 支援多個 Client 在同一 session 內協作
+- [x] **檔案管理和傳輸**：uploadFile()/downloadFile() 支援雙向檔案傳輸
 
 ---
 
