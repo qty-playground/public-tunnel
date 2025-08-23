@@ -1,13 +1,13 @@
 # DevOps 概念情境 OOA 類別圖設計
 
 ## 設計目標
-將 `analysis/devops_concept_structured_analysis.md` 的結構化分析結果轉換為物件導向的類別圖設計，產出可實作的系統藍圖。
+將 `02_structured_analysis.md` 的結構化分析結果轉換為物件導向的類別圖設計，產出可實作的系統藍圖。
 
 ## 設計日期
 2024-11-23
 
 ## 輸入來源
-基於 `analysis/devops_concept_structured_analysis.md` 中的最終合併結構樹進行轉換。
+基於 `02_structured_analysis.md` 中的最終合併結構樹進行轉換。
 
 ---
 
@@ -470,8 +470,8 @@ classDiagram
 ### 方法論價值證明
 這個 Server-centric OOA 設計成功完成了從「使用者情境」→「結構化分析」→「系統邊界定義」→「實作藍圖」的完整轉換鏈：
 
-1. **情境還原** (`docs/04_devops_concept.md`)：將 technical specs 轉為 user scenarios
-2. **結構化分析** (`analysis/devops_concept_structured_analysis.md`)：從 scenarios 提取概念結構  
+1. **情境還原** (`01_devops_concept.md`)：將 technical specs 轉為 user scenarios
+2. **結構化分析** (`02_structured_analysis.md`)：從 scenarios 提取概念結構  
 3. **系統邊界定義**：識別實作範圍與外部消費者邊界
 4. **Server-centric 設計** (本文件)：從概念結構推導實際可實作的系統架構
 

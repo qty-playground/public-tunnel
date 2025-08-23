@@ -9,8 +9,8 @@
 
 ### ✅ 情境還原效果驗證
 
-**輸入**：`docs/01_requirement.md`（技術規格，173行）
-**輸出**：`docs/04_devops_concept.md`（概念情境，109行）
+**輸入**：`../requirements/01_requirement.md`（技術規格，173行）
+**輸出**：`01_devops_concept.md`（概念情境，109行）
 
 **成功指標**：
 - [x] 保留所有核心技術術語（AI助手、Client、Server、Session、Command、polling、FIFO、file-id）
