@@ -19,7 +19,7 @@
 
 **原始名詞概念統計**：從結構化分析中提取了 67 個名詞概念
 
-**建立分類體系**（5個核心實作組件）：
+**建立分類體系**（4個核心實作組件）：
 
 | 組件名稱 | 歸屬名詞概念 | 核心職責 | 組件類型 |
 |---------|-------------|----------|----------|
@@ -27,8 +27,10 @@
 | **Command** | 指令、command-id、執行模式、同步、非同步 | 指令的資料結構和狀態管理 | 資料結構 |
 | **ExecutionResult** | 結果、執行結果、成功、錯誤 | 執行結果的資料結構 | 資料結構 |
 | **File** | 檔案、file-id、摘要資訊、複雜的執行結果 | 檔案元數據和存儲管理 | 資料結構 |
-| **Session** | session、session空間、不同的session | 會話隔離和資源管理 | 資料結構 |
 | **Queue** | command queue、FIFO command queue、專屬queue | FIFO指令佇列管理 | 資料結構 |
+
+**簡化的會話管理**：
+- **Session** → sessionId (字串) - 作為 Client 的屬性，用於資源隔離
 
 **移除的外部角色和抽象概念**：
 - **User**：維運工程師、DevOps工程師 → 系統外部的操作者，不屬於實作範圍
@@ -119,10 +121,10 @@ Server (核心實作組件)
 ```java
 class Server {
     // 核心屬性
-    -Map<String, Session> sessions          // Session 管理
-    -Map<String, Queue> clientQueues        // Client 佇列管理
-    -Map<String, ExecutionResult> results   // 結果儲存
-    -Map<String, File> files                // 檔案管理
+    -Map<String, Queue> clientQueues        // Client 佇列管理 (key: clientId)
+    -Map<String, ExecutionResult> results   // 結果儲存 (key: commandId)
+    -Map<String, File> files                // 檔案管理 (key: fileId)
+    -Map<String, Set<String>> sessionClients // Session 隔離 (key: sessionId, value: clientIds)
     
     // Core HTTP API Endpoints
     +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)  // POST /api/session/{sessionId}/command
@@ -203,23 +205,6 @@ class File {
 }
 ```
 
-#### Session (會話資料)
-```java
-class Session {
-    // 純資料屬性 - 資源隔離單位
-    -String sessionId           // Session 唯一ID
-    -Set<String> activeClients   // 目前活躍的 Client 列表
-    -Map<String, Long> clientLastSeen // Client 最後活躍時間記錄
-    -long createdTime           // Session 建立時間戳記
-    
-    // 基本存取器 (Getters/Setters only)  
-    +String getSessionId()
-    +Set<String> getActiveClients()
-    +Map<String, Long> getClientLastSeen()
-    +long getCreatedTime()
-    +String toJson()                          // 序列化為 JSON
-}
-```
 
 #### Queue (佇列資料)
 ```java
@@ -254,11 +239,9 @@ class Queue {
 
 | 主類別 | 關係 | 從屬類別 | 多重性 | 關係描述 |
 |-------|------|---------|--------|----------|
-| Server | *-- | Session | 1 : * | Server 管理多個 Session |
 | Server | *-- | Queue | 1 : * | Server 管理多個 Client 專屬佇列 |
 | Server | *-- | ExecutionResult | 1 : * | Server 儲存多個執行結果 |
 | Server | *-- | File | 1 : * | Server 管理多個檔案 |
-| Session | *-- | File | 1 : * | Session 包含多個檔案 (邏輯歸屬) |
 | Queue | *-- | Command | 1 : * | Queue 儲存多個指令 |
 | ExecutionResult | *-- | File | 1 : * | 執行結果可附帶多個檔案 (透過 fileIds) |
 
@@ -269,29 +252,26 @@ class Queue {
 | Server | ..> | Command | Server 創建和管理 Command 物件 |
 | Server | ..> | ExecutionResult | Server 創建和儲存 ExecutionResult 物件 |
 | Server | ..> | File | Server 創建和管理 File 物件 |
-| Server | ..> | Session | Server 創建和管理 Session 物件 |
 | Server | ..> | Queue | Server 創建和管理 Queue 物件 |
 | Command | ..> | ExecutionResult | Command 執行後產生 ExecutionResult |
 | ExecutionResult | ..> | File | ExecutionResult 可關聯多個 File (透過 fileIds) |
-| File | ..> | Session | File 歸屬於特定 Session (透過 sessionId) |
-| Command | ..> | Session | Command 歸屬於特定 Session (透過 sessionId) |
 
 ### 多重性驗證 Checklist
 
 **業務規則約束驗證**：
-- [x] 一個 Server 可以管理多個隔離的 Session (1:*)
-- [x] 每個 Client 有自己專屬的 Queue，由 Server 管理 (1:*)
-- [x] 一個 Session 可以包含多個 File，由 Server 統一管理 (1:*)
+- [x] 一個 Server 可以管理多個 Client 專屬的 Queue (1:*)
+- [x] 每個 Queue 儲存多個 Command，由 Server 統一管理 (1:*)
+- [x] ExecutionResult 可以關聯多個 File 作為附件 (1:*)
 
 **數據一致性驗證**：
 - [x] Command 與 ExecutionResult 通過 commandId 建立關聯
-- [x] File 與 Session 通過 sessionId 建立關聯
+- [x] File 與 Command 通過 sessionId 實現邏輯隔離
 - [x] Queue 與 Client 通過 queueId (clientId) 建立關聯
 - [x] ExecutionResult 與 File 通過 fileIds 陣列建立關聯
 
 **生命週期匹配性**：
 - [x] Server 控制所有資料結構的生命週期
-- [x] Session 的生命週期包含其邏輯關聯的 File
+- [x] sessionId 作為字串屬性，用於跨資料結構的資源隔離
 - [x] Queue 的生命週期與對應 Client 的存在一致
 - [x] ExecutionResult 的生命週期獨立於 Command (用於歷史查詢)
 
@@ -302,10 +282,10 @@ class Queue {
 ```mermaid
 classDiagram
     class Server {
-        -Map~String, Session~ sessions
         -Map~String, Queue~ clientQueues
         -Map~String, ExecutionResult~ results
         -Map~String, File~ files
+        -Map~String, Set~String~~ sessionClients
         +HttpResponse submitCommand(String sessionId, String targetClient, String command, String mode)
         +HttpResponse getNextCommand(String sessionId, String clientId)
         +HttpResponse submitResult(String sessionId, String commandId, String status, String output)
@@ -363,17 +343,6 @@ classDiagram
         +String toJson()
     }
     
-    class Session {
-        -String sessionId
-        -Set~String~ activeClients
-        -Map~String, Long~ clientLastSeen
-        -long createdTime
-        +String getSessionId()
-        +Set~String~ getActiveClients()
-        +Map~String, Long~ getClientLastSeen()
-        +long getCreatedTime()
-        +String toJson()
-    }
     
     class Queue {
         -String queueId
@@ -392,11 +361,9 @@ classDiagram
     }
     
     %% 聚合關係 (has-a) - Server-centric design
-    Server "1" *-- "*" Session : manages
     Server "1" *-- "*" Queue : manages
     Server "1" *-- "*" ExecutionResult : stores
     Server "1" *-- "*" File : manages
-    Session "1" *-- "*" File : "contains logically"
     Queue "1" *-- "*" Command : stores
     ExecutionResult "1" *-- "*" File : "references via fileIds"
     
@@ -404,12 +371,9 @@ classDiagram
     Server ..> Command : "creates manages"
     Server ..> ExecutionResult : "creates stores"
     Server ..> File : "creates manages"
-    Server ..> Session : "creates manages"
     Server ..> Queue : "creates manages"
     Command ..> ExecutionResult : "produces when executed"
     ExecutionResult ..> File : "references via fileIds"
-    File ..> Session : "belongs to via sessionId"
-    Command ..> Session : "belongs to via sessionId"
     
     %% External consumers (not implemented in this system)
     class AIAssistant {
@@ -439,9 +403,10 @@ classDiagram
 ### 6.1 一致性檢查
 
 - [x] **所有重要業務概念都有對應組件**
-  - 5個核心組件完全涵蓋原始結構化分析中的重要概念
+  - 4個核心組件完全涵蓋原始結構化分析中的重要概念
   - Server-centric 設計聚焦於實際實作範圍
-  - Command, ExecutionResult, File, Session, Queue 核心資料結構完整建模
+  - Command, ExecutionResult, File, Queue 核心資料結構完整建模
+  - Session 簡化為 sessionId 字串，作為資源隔離標識
 
 - [x] **方法覆蓋所有關鍵業務流程**
   - 指令提交流程：AIAssistant → Server.submitCommand() → Command 儲存到 targetClient 的 Queue
@@ -504,18 +469,18 @@ classDiagram
 ## 總結
 
 ### 轉換成功驗證
-✅ **概念完整性**：67個原始名詞概念成功歸納為5個核心組件 (Server + 4個資料結構)
+✅ **概念完整性**：67個原始名詞概念成功歸納為4個核心組件 (Server + 3個資料結構 + sessionId字串)
 ✅ **系統邊界清晰**：Server-centric 設計聚焦於實際實作範圍，外部消費者透過 HTTP API 交互
 ✅ **架構一致性**：Server-centric 設計完全符合原始 public-tunnel 技術規格
 ✅ **實作可行性**：具體的 HTTP API 方法和資料結構定義可直接用於開發
 
-### 系統邊界重新定義價值
-通過系統邊界重新定義，我們達成了：
+### 極簡架構設計價值
+通過持續簡化和重新定義，我們達成了：
 
-1. **實作聚焦**：從8個類別精簡為1個實作組件 + 4個資料結構
-2. **職責清晰**：Server 承擔所有業務邏輯，資料結構專注於資料操作
-3. **低耦合設計**：外部消費者透過標準 HTTP API 與系統解耦
-4. **高可維護性**：集中的業務邏輯便於維護和擴展
+1. **實作聚焦**：最終精簡為1個實作組件 + 3個資料結構
+2. **職責清晰**：Server 承擔所有業務邏輯，資料結構純化為資料載體
+3. **Session 簡化**：從複雜物件簡化為字串ID，作為資源隔離標識
+4. **直接映射**：每個組件直接對應資料庫表和 HTTP API endpoint
 
 ### 方法論價值證明
 這個 Server-centric OOA 設計成功完成了從「使用者情境」→「結構化分析」→「系統邊界定義」→「實作藍圖」的完整轉換鏈：
@@ -526,11 +491,11 @@ classDiagram
 4. **Server-centric 設計** (本文件)：從概念結構推導實際可實作的系統架構
 
 ### 後續應用指引
-此 Server-centric OOA 設計可作為：
+此極簡 Server-centric OOA 設計可作為：
 - **開發藍圖**：直接指導 public-tunnel server 的程式實作
-- **API 設計**：HTTP API 方法簽名直接對應 REST endpoint 設計
-- **資料庫設計**：5個資料結構可直接映射為資料庫 schema
-- **測試設計**：基於 Server 方法設計 API 測試和單元測試
-- **部署指南**：單一 Server 組件簡化部署和維運
+- **API 設計**：8個 HTTP API 方法直接對應 REST endpoint 設計
+- **資料庫設計**：3個資料結構直接映射為資料庫表，sessionId 作為隔離欄位
+- **測試設計**：基於 Server API 方法設計 API 測試和單元測試
+- **部署指南**：單一 Server 組件，最簡化的部署和維運
 
-整個方法論鏈得到完整驗證，Server-centric 設計方法可成功應用於其他需要明確實作邊界的技術系統。
+整個方法論鏈得到完整驗證，極簡 Server-centric 設計方法展現了從複雜概念到實用架構的完整轉換能力。
