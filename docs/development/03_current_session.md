@@ -8,14 +8,19 @@
 
 ## 當前狀態
 - **工作階段**: Phase A - 系統基石開發
-- **進行中的 User Story**: US-003 - Default Session Auto Join
-- **下一個目標**: 完成 US-003 BDD 測試建立
+- **進行中的 User Story**: 無（US-003 已完成）
+- **下一個目標**: 開始 US-005 - Client Presence Tracking
 
 ## 已完成工作
 1. ✅ 分析專案設計文件和 User Stories
 2. ✅ 建立 AI 助手非互動模式工作流程框架
 3. ✅ 分析功能相依性並建立開發順序
 4. ✅ 建立進度規劃文件結構
+5. ✅ 完成 US-003: Default Session Auto Join
+   - BDD 測試完整建立
+   - API 骨架和真實實作
+   - InMemorySessionRepository 實作
+   - 雙重驗證測試（API + State）
 
 ## 建立的文件
 1. **00_ai_workflow_guide.md** - AI 助手非互動模式開發指南
