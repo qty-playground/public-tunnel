@@ -125,11 +125,22 @@ async def get_all_clients_presence_status_in_session(
     
     US-016: Enhanced presence querying with detailed offline status and filtering support
     """
-    # API Skeleton stage: Return 501 Not Implemented
-    raise HTTPException(
-        status_code=501,
-        detail="Get all clients presence status in session not implemented yet"
-    )
+    # Verify session exists
+    session = session_repo.get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Session {session_id} not found"
+        )
+    
+    # Get detailed offline status for all clients in session
+    detailed_statuses = offline_status_manager.get_detailed_offline_status_for_session(session_id)
+    
+    # Apply status filtering if provided
+    if status:
+        detailed_statuses = [s for s in detailed_statuses if s.presence_status == status]
+    
+    return detailed_statuses
 
 
 @router.get("/api/sessions/{session_id}/clients/eligible-for-commands", response_model=List[ClientOfflineStatusInfo])
@@ -147,8 +158,15 @@ async def get_clients_eligible_for_commands_in_session(
     
     US-016: Command eligibility filtering based on offline status management
     """
-    # API Skeleton stage: Return 501 Not Implemented
-    raise HTTPException(
-        status_code=501,
-        detail="Get clients eligible for commands in session not implemented yet"
-    )
+    # Verify session exists
+    session = session_repo.get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Session {session_id} not found"
+        )
+    
+    # Get clients eligible for commands (online only)
+    eligible_clients = offline_status_manager.get_clients_eligible_for_commands(session_id)
+    
+    return eligible_clients
