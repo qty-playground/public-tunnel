@@ -27,16 +27,26 @@ git diff --cached
 - 檢查是否有應該包含的 unstaged changes
 
 ### 3. 快速健全性檢查
+```bash
+# Debug 程式碼檢查
+grep -r "print\(|console\.log|debugger" public_tunnel/ tests/ || echo "✅ 無 debug 程式碼"
+
+# TODO/FIXME 檢查（排除既有的框架 TODO）
+grep -r "TODO.*US-\|FIXME.*US-" public_tunnel/ tests/ || echo "✅ 無未完成的 User Story TODO"
+
+# 501 錯誤檢查
+grep -r "501\|Not Implemented" public_tunnel/ tests/ || echo "✅ 無 HTTP 501 錯誤"
+
+# BDD scenario @skip 檢查
+find tests/features -name "*.feature" -exec grep -l "@skip" {} \; | grep -v "已知待實作功能" || echo "✅ 已完成功能無 @skip 標記"
+```
+
+檢查項目：
 - 沒有 debug statements（print, console.log, debugger）殘留
 - 沒有針對此 user story 的 TODO/FIXME comments
 - 所有新 dependencies 都已正確宣告
 - **已完成實作的 BDD scenarios 移除 @skip 標記**（實作完成的功能測試應該正常執行）
-- **完全消除 HTTP 501 錯誤**：
-  ```bash
-  # 檢查是否還有 501 錯誤
-  grep -r "501\|Not Implemented" public_tunnel/ tests/
-  ```
-  實作完成後不應有任何 HTTP 501 Not Implemented 回應
+- **完全消除 HTTP 501 錯誤**：實作完成後不應有任何 HTTP 501 Not Implemented 回應
 
 ## 執行流程
 
@@ -53,25 +63,49 @@ git diff --cached
 
 **User Story**: [簡要描述]
 
-**Test 結果**: ✅ 所有測試通過
+### 檢查結果
+**Test 執行**: ✅ 所有測試通過 (X/X)
 **Git Status**: ✅ 檔案正確 staged
+**健全性檢查**: ✅ 所有檢查通過
+  - Debug 程式碼: ✅ 無殘留
+  - TODO/FIXME: ✅ 無未完成項目
+  - HTTP 501: ✅ 完全消除
+  - @skip 標記: ✅ 已移除
 
-**執行 Commit**:
-```
-git commit -m "feat: [commit message]"
+### 執行 Commit
+```bash
+git commit -m "feat: [commit message]
+
+- [功能要點1]
+- [功能要點2]
+- [功能要點3]
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
-✅ Commit 完成！
+✅ **Commit 完成！**
 ```
 
 或如果有問題：
 
 ```
-**Test 結果**: ❌ 發現問題
+## User Story 驗證失敗
+
+**User Story**: [簡要描述]
+
+### 發現問題
+**Test 結果**: ❌ 測試失敗 ([X]/[Y] 通過)
 - [具體錯誤訊息]
 
-**修復動作**: 
+**健全性檢查**: ❌ 發現問題
+- [具體問題描述]
+
+### 修復動作
 [自動修復或提供修復指引]
+
+請修復問題後重新執行驗證。
 ```
 
 ## Commit Message 格式範本
@@ -101,12 +135,64 @@ feat: 實作使用者註冊功能
 ```
 
 ## 成功標準
-- 所有 pytest 測試通過 → 自動執行 commit
-- Git staging area 只包含相關變更 → 自動執行 commit  
-- 沒有 debug 程式碼或未完成的 TODO 殘留 → 自動執行 commit
-- **已完成實作的 BDD scenarios 移除 @skip 標記** → 自動執行 commit
-- **完全消除 HTTP 501 錯誤** → 自動執行 commit
-- Commit message 遵循格式範本
+
+所有檢查項目都必須通過才能自動執行 commit：
+
+### 必要檢查項目
+1. **測試驗證** ✅
+   - 所有 pytest 測試通過（無失敗、無錯誤）
+   - 測試涵蓋所有實作功能
+
+2. **Git 狀態驗證** ✅  
+   - Staging area 只包含相關變更
+   - 沒有意外檔案被包含
+   - 沒有遺漏的重要變更
+
+3. **程式碼品質驗證** ✅
+   - 沒有 debug 程式碼殘留（print, console.log, debugger）
+   - 沒有針對此 user story 的未完成 TODO/FIXME
+   - 遵循專案編碼風格和架構原則
+
+4. **功能完整性驗證** ✅
+   - 已完成實作的 BDD scenarios 移除 @skip 標記
+   - 完全消除 HTTP 501 錯誤（實作和測試）
+   - 功能符合 User Story 的 Acceptance Criteria
+
+5. **文件和進度更新** ✅
+   - 進度追蹤文件已更新（使用當前日期）
+   - 相關文件狀態已同步
+   - Commit message 遵循格式範本
+
+### 自動執行原則
+- 所有檢查通過 → 自動執行 commit
+- 任何檢查失敗 → 停止並要求修復
+- 修復完成後重新驗證
 
 ## 執行原則
-保持自動化和高效率。由於程式碼品質在 BDD 開發期間已經處理，只需快速驗證並直接執行 commit。如遇到阻止部署的關鍵問題，先自動修復再 commit。
+
+### 自動化優先
+- 保持高效率的驗證流程
+- 由於程式碼品質在 BDD 開發期間已經處理，專注於技術驗證
+- 所有檢查都有對應的命令可自動執行
+
+### 錯誤處理
+- 遇到可自動修復的問題：立即修復後重新驗證
+- 遇到需要設計決策的問題：停止並報告給使用者
+- 遇到阻止部署的關鍵問題：優先修復再 commit
+
+### 品質保證
+- 每個完成的 User Story 都必須通過完整的驗證流程
+- 不允許跳過任何檢查項目
+- 確保每次 commit 都是可部署的品質
+
+### 文件同步
+- 進度追蹤文件必須即時更新
+- 使用當前系統日期而非固定日期
+- 確保專案狀態文件與實際進度一致
+
+## 注意事項
+
+1. **時間戳正確性**：使用系統環境中的當前日期，不要使用固定的歷史日期
+2. **檢查完整性**：每個檢查項目都必須執行，不能因為「看起來正常」而跳過
+3. **錯誤處理**：發現問題時優先自動修復，無法自動修復時提供明確的修復指引
+4. **commit 品質**：每個 commit 都應該是功能完整、測試通過、可部署的狀態
