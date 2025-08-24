@@ -22,12 +22,12 @@
 
 ### Phase A: 系統基石
 #### US-003: Default Session Auto Join
-- **狀態**: Not Started
+- **狀態**: In Progress
 - **完成度**: 0%
 - **相依**: 無
 - **阻塞**: 無
 - **測試狀態**: 未建立
-- **最後更新**: -
+- **最後更新**: 2024-11-24 (開始開發)
 
 #### US-005: Client Presence Tracking
 - **狀態**: Not Started

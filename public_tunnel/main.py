@@ -1,10 +1,14 @@
 from fastapi import FastAPI
+from public_tunnel.routers import client_polling
 
 app = FastAPI(
     title="Public Tunnel API",
     description="A network tunneling solution for AI assistants",
     version="0.1.0"
 )
+
+# Register routers
+app.include_router(client_polling.router)
 
 
 @app.get("/")

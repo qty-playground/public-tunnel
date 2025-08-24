@@ -39,11 +39,14 @@ def get_session_repository():
     
     Returns:
         SessionRepository: Session data repository instance
-        
-    Note: Implementation will be added when Repository layer is implemented.
     """
-    # TODO: return SessionRepository(connection_string=DATABASE_URL)
-    pass
+    from public_tunnel.repositories.session_repository import InMemorySessionRepository
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_session_repository, '_instance'):
+        get_session_repository._instance = InMemorySessionRepository()
+    
+    return get_session_repository._instance
 
 
 def get_command_repository():
