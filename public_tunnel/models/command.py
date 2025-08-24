@@ -45,6 +45,15 @@ class CommandExecutionStatusResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+class ClientCommandRetrievalResponse(BaseModel):
+    """US-009: Client 單一指令接收回應模型"""
+    session_id: str
+    client_id: str
+    command: Optional[dict] = None  # 單一指令，格式與現有相容
+    has_more_commands: bool = False  # 是否還有更多指令
+    queue_size: int = 0  # 剩餘佇列大小
+
+
 class Command:
     """指令資料結構 - 基於 OOA 設計"""
     

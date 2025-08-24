@@ -8,8 +8,8 @@
 
 ## 當前狀態
 - **工作階段**: Phase B - 核心指令流程開發
-- **進行中的 User Story**: 無（US-007 已完成）
-- **下一個目標**: 選擇 Phase B 的下一個功能 (US-009, US-021)
+- **進行中的 User Story**: 無（US-009 已完成）
+- **下一個目標**: 完成 Phase B 的最後功能 US-021 或開始 Phase C
 
 ## 已完成工作
 1. ✅ 分析專案設計文件和 User Stories
@@ -38,6 +38,13 @@
    - 確保每次 polling 只返回一個指令，嚴格遵循先進先出順序
    - 完整的 RED-GREEN-REFACTOR TDD 循環實作
    - 使用 CommandQueueManager 的 get_next_command_with_queue_info 整合
+9. ✅ 完成 US-009: Client Single Command Retrieval
+   - BDD 測試建立並通過，驗證單指令返回和佇列管理行為
+   - 實作 client-focused `/api/sessions/{session_id}/clients/{client_id}/command` API 端點
+   - 確保每次 polling 只返回一個指令並從佇列移除
+   - 提供 has_more_commands 和 queue_size 讓 client 控制執行節奏
+   - 使用 ClientCommandRetrievalResponse 模型優化使用者體驗
+   - 完整的 TDD 實作循環，包含程式碼重構和品質改善
 
 ## 建立的文件
 1. **00_ai_workflow_guide.md** - AI 助手非互動模式開發指南
