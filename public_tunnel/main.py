@@ -8,6 +8,7 @@ from public_tunnel.routers import submit_commands_to_target_clients
 from public_tunnel.routers import query_command_execution_status
 from public_tunnel.routers import fifo_command_polling
 from public_tunnel.routers import client_single_command_retrieval
+from public_tunnel.routers import unified_result_query_mechanism
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -33,6 +34,9 @@ app.include_router(fifo_command_polling.router)
 
 # US-009: Client Single Command Retrieval router  
 app.include_router(client_single_command_retrieval.router)
+
+# US-021: Unified Result Query Mechanism router
+app.include_router(unified_result_query_mechanism.router)
 
 
 @app.get("/")

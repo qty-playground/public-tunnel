@@ -173,6 +173,26 @@ def get_offline_status_manager():
     return get_offline_status_manager._instance
 
 
+def get_execution_result_manager():
+    """Provide unified Execution Result Manager service
+    
+    Returns the same ExecutionResultManager instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        ExecutionResultManager: Execution result management service instance
+        
+    Note: US-021 implementation - manages unified result storage and query
+    """
+    from public_tunnel.services.execution_result_manager import InMemoryExecutionResultManager
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_execution_result_manager, '_instance'):
+        get_execution_result_manager._instance = InMemoryExecutionResultManager()
+    
+    return get_execution_result_manager._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
@@ -182,3 +202,4 @@ CommandQueueManagerDep = Annotated[object, Depends(get_command_queue_manager)]
 SessionManagerDep = Annotated[object, Depends(get_session_manager)]
 ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker)]
 OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
+ExecutionResultManagerDep = Annotated[object, Depends(get_execution_result_manager)]
