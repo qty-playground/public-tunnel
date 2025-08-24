@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from public_tunnel.routers import client_poll_commands
 from public_tunnel.routers import track_client_presence
+from public_tunnel.routers import client_offline_threshold_configuration
+from public_tunnel.routers import client_offline_status_enforcement
+from public_tunnel.routers import command_submit_to_client
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -11,6 +14,11 @@ app = FastAPI(
 # Register routers
 app.include_router(client_poll_commands.router)
 app.include_router(track_client_presence.router)
+app.include_router(command_submit_to_client.router)
+
+# US-016: Client Offline Status Management routers
+app.include_router(client_offline_threshold_configuration.router)
+app.include_router(client_offline_status_enforcement.router)
 
 
 @app.get("/")

@@ -12,7 +12,7 @@
 ### 進度總覽
 | 階段 | User Stories | 狀態 | 完成度 | 預計完成 |
 |------|-------------|------|--------|----------|
-| Phase A: 系統基石 | US-003, US-005, US-016 | In Progress | 67% | Week 2 |
+| Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Not Started | 0% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Not Started | 0% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
@@ -43,12 +43,18 @@
   - 支援 online/offline 狀態判定基於可配置的超時閾值
 
 #### US-016: Client Offline Status Management
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-005
-- **阻塞**: 等待 US-005 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-24 (實作完成)
+- **實作內容**:
+  - 建立離線狀態偵測機制，基於配置的時間閾值
+  - 實作 Client 狀態自動轉換（online ↔ offline）
+  - 建立離線 Client 拒絕命令的業務規則
+  - 提供離線閾值配置管理 API
+  - 整合強制狀態檢查功能
 
 ### Phase B: 核心指令流程
 #### US-006: Targeted Client Command Submission

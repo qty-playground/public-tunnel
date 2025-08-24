@@ -130,6 +130,28 @@ def get_client_presence_tracker():
     return get_client_presence_tracker._instance
 
 
+def get_offline_status_manager():
+    """Provide unified Offline Status Manager service
+    
+    Returns the same OfflineStatusManager instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        OfflineStatusManager: Offline status management service instance
+        
+    Note: US-016 implementation - manages offline status operations
+    """
+    from public_tunnel.services.offline_status_manager import OfflineStatusManager
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_offline_status_manager, '_instance'):
+        # Get the shared presence tracker instance
+        presence_tracker = get_client_presence_tracker()
+        get_offline_status_manager._instance = OfflineStatusManager(presence_tracker)
+    
+    return get_offline_status_manager._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
@@ -137,3 +159,4 @@ ClientRepositoryDep = Annotated[object, Depends(get_client_repository)]
 CommandValidatorDep = Annotated[object, Depends(get_command_validator)]
 SessionManagerDep = Annotated[object, Depends(get_session_manager)]
 ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker)]
+OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
