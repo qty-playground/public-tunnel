@@ -13,7 +13,7 @@
 | 階段 | User Stories | 狀態 | 完成度 | 預計完成 |
 |------|-------------|------|--------|----------|
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
-| Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Not Started | 0% | Week 4 |
+| Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | In Progress | 25% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Not Started | 0% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
@@ -58,20 +58,26 @@
 
 ### Phase B: 核心指令流程
 #### US-006: Targeted Client Command Submission
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-003
-- **阻塞**: 等待 US-003 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-24 (實作完成)
+- **實作內容**:
+  - 建立 CommandQueueManager 服務管理每個 client 的 FIFO 指令佇列
+  - 實作 targeted command submission API 端點
+  - 建立完整的 BDD 測試驗證指令佇列隔離
+  - 支援 session 內多 client 的指令分發隔離機制
+  - 使用統一依賴注入架構整合服務層
 
 #### US-007: Command FIFO Queue Management
-- **狀態**: Not Started
+- **狀態**: Not Started  
 - **完成度**: 0%
 - **相依**: US-006
-- **阻塞**: 等待 US-006 完成
+- **阻塞**: 無（US-006 已完成）
 - **測試狀態**: 未建立
-- **最後更新**: -
+- **最後更新**: 2025-08-24 (解除阻塞)
 
 #### US-009: Client Single Command Retrieval
 - **狀態**: Not Started
@@ -96,9 +102,9 @@
 - **狀態**: Not Started
 - **完成度**: 0%
 - **相依**: US-006
-- **阻塞**: 等待 US-006 完成
+- **阻塞**: 無（US-006 已完成）
 - **測試狀態**: 未建立
-- **最後更新**: -
+- **最後更新**: 2025-08-24 (解除阻塞)
 
 #### US-014: Offline Client Command Rejection
 - **狀態**: Not Started

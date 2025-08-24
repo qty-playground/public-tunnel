@@ -7,9 +7,9 @@
 - **目標**: 建立完整的進度規劃文件體系
 
 ## 當前狀態
-- **工作階段**: Phase A - 系統基石開發
-- **進行中的 User Story**: 無（US-005 已完成）
-- **下一個目標**: 開始 US-016 - Client Offline Status Management
+- **工作階段**: Phase B - 核心指令流程開發
+- **進行中的 User Story**: 無（US-006 已完成）
+- **下一個目標**: 選擇 Phase B 的下一個功能 (US-007, US-009, US-021)
 
 ## 已完成工作
 1. ✅ 分析專案設計文件和 User Stories
@@ -26,6 +26,12 @@
    - ClientPresenceTracker 服務實作
    - 整合到現有 polling API
    - Presence query API 實作
+7. ✅ 完成 US-006: Targeted Client Command Submission
+   - BDD 測試建立並通過完整的實作流程
+   - 建立 CommandQueueManager 服務管理 client 佇列
+   - 實作指令隔離和 FIFO 佇列機制
+   - API skeleton → GREEN Stage 1 → GREEN Stage 2 完整 TDD 循環
+   - 驗證指令只會被發送給指定的目標 client
 
 ## 建立的文件
 1. **00_ai_workflow_guide.md** - AI 助手非互動模式開發指南

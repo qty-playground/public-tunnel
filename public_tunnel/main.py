@@ -4,6 +4,8 @@ from public_tunnel.routers import track_client_presence
 from public_tunnel.routers import client_offline_threshold_configuration
 from public_tunnel.routers import client_offline_status_enforcement
 from public_tunnel.routers import command_submit_to_client
+from public_tunnel.routers import submit_commands_to_target_clients
+from public_tunnel.routers import query_command_execution_status
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -19,6 +21,10 @@ app.include_router(command_submit_to_client.router)
 # US-016: Client Offline Status Management routers
 app.include_router(client_offline_threshold_configuration.router)
 app.include_router(client_offline_status_enforcement.router)
+
+# US-006: Targeted Client Command Submission routers
+app.include_router(submit_commands_to_target_clients.router)
+app.include_router(query_command_execution_status.router)
 
 
 @app.get("/")

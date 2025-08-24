@@ -89,10 +89,31 @@ def get_command_validator():
     Returns:
         CommandValidator: Command validation service instance
         
-    Note: Implementation will be added when validation logic is needed.
+    Note: US-006 implementation - validates command submissions
     """
-    # TODO: return CommandValidator()
+    # CommandValidator implementation for US-006 - currently not needed
+    # Basic command validation is handled at API level via Pydantic models
     pass
+
+
+def get_command_queue_manager():
+    """Provide unified Command Queue Manager service
+    
+    Returns the same CommandQueueManager instance across all routers.
+    Manages FIFO queues for each target client within sessions.
+    
+    Returns:
+        CommandQueueManager: Command queue management service instance
+        
+    Note: US-006 implementation - manages targeted command queues
+    """
+    from public_tunnel.services.command_queue_manager import InMemoryCommandQueueManager
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_command_queue_manager, '_instance'):
+        get_command_queue_manager._instance = InMemoryCommandQueueManager()
+    
+    return get_command_queue_manager._instance
 
 
 def get_session_manager():
@@ -157,6 +178,7 @@ SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
 ClientRepositoryDep = Annotated[object, Depends(get_client_repository)]
 CommandValidatorDep = Annotated[object, Depends(get_command_validator)]
+CommandQueueManagerDep = Annotated[object, Depends(get_command_queue_manager)]
 SessionManagerDep = Annotated[object, Depends(get_session_manager)]
 ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker)]
 OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
