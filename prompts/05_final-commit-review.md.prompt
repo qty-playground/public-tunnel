@@ -1,0 +1,103 @@
+# Final Commit Review Prompt
+
+你正在進行完成 user story 前的最終驗證。由於 BDD workflow 已經確保程式碼品質和需求符合度，這只是一個簡單的驗證檢查點。
+
+## 背景說明
+- 此步驟遵循 BDD workflow（user story → BDD skeleton → API skeleton → TDD implementation）
+- 程式碼品質和需求對齊已在開發過程中驗證完成
+- 專注於技術驗證而非設計審查
+
+## 驗證步驟
+
+### 1. Test 執行
+```bash
+pytest -v
+```
+- 執行完整的 test suite
+- 確保所有測試都通過，無失敗或錯誤
+- 回報任何失敗 test 的具體細節
+
+### 2. Git Status 檢查
+```bash
+git status
+git diff --cached
+```
+- 驗證 staged changes 符合 user story 範圍
+- 確認沒有意外檔案被包含
+- 檢查是否有應該包含的 unstaged changes
+
+### 3. 快速健全性檢查
+- 沒有 debug statements（print, console.log, debugger）殘留
+- 沒有針對此 user story 的 TODO/FIXME comments
+- 所有新 dependencies 都已正確宣告
+
+## 執行流程
+
+1. **驗證檢查**：執行 pytest 和檢查 git status
+2. **如果驗證通過**：直接執行 git commit 與適當的 commit message
+3. **如果驗證失敗**：修復問題後重新檢查
+
+## 輸出格式
+
+執行驗證並自動 commit：
+
+```
+## User Story 完成驗證
+
+**User Story**: [簡要描述]
+
+**Test 結果**: ✅ 所有測試通過
+**Git Status**: ✅ 檔案正確 staged
+
+**執行 Commit**:
+```
+git commit -m "feat: [commit message]"
+```
+
+✅ Commit 完成！
+```
+
+或如果有問題：
+
+```
+**Test 結果**: ❌ 發現問題
+- [具體錯誤訊息]
+
+**修復動作**: 
+[自動修復或提供修復指引]
+```
+
+## Commit Message 格式範本
+
+遵循常見的 commit 慣例格式：
+
+```
+<type>: <subject>
+
+<body>
+```
+
+**Type 類型：**
+- `feat`: 新功能
+- `fix`: 錯誤修復
+- `docs`: 文件更新
+- `refactor`: 程式碼重構
+
+**範例：**
+```
+feat: 實作使用者註冊功能
+
+- 新增使用者註冊 API endpoint
+- 實作密碼加密和驗證邏輯
+- 新增電子郵件格式驗證
+- 包含完整的測試案例覆蓋
+```
+
+## 成功標準
+- 所有 pytest 測試通過 → 自動執行 commit
+- Git staging area 只包含相關變更 → 自動執行 commit  
+- 沒有 debug 程式碼或未完成的 TODO 殘留 → 自動執行 commit
+- Commit message 遵循格式範本
+
+## 執行原則
+保持自動化和高效率。由於程式碼品質在 BDD 開發期間已經處理，只需快速驗證並直接執行 commit。如遇到阻止部署的關鍵問題，先自動修復再 commit。
