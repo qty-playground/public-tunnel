@@ -5,6 +5,7 @@ Handles client presence tracking functionality including updating last_seen time
 and managing online/offline status based on polling activity.
 """
 
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from public_tunnel.models.client_presence import (
     UpdateClientPresenceRequest,
@@ -34,9 +35,28 @@ async def update_client_presence_in_session(
     This endpoint is called to update the client's last_seen timestamp
     and maintain accurate online/offline status tracking.
     """
-    raise HTTPException(
-        status_code=501,
-        detail="Client presence tracking not implemented yet"
+    # Get previous presence info to determine status change  
+    previous_presence_info = presence_tracker.get_client_presence(client_id, session_id)
+    previous_status = previous_presence_info.presence_status if previous_presence_info else ClientPresenceStatus.UNKNOWN
+
+    # Update client presence using the tracker service
+    updated_presence_info = presence_tracker.update_client_last_seen(
+        client_id=client_id,
+        session_id=session_id,
+        timestamp=presence_request.last_seen_timestamp
+    )
+
+    # Determine current status based on the update
+    current_status = updated_presence_info.presence_status
+
+    # Prepare the response
+    return UpdateClientPresenceResponse(
+        client_id=client_id,
+        session_id=session_id,
+        previous_status=previous_status,
+        current_status=current_status,
+        last_seen_timestamp=updated_presence_info.last_seen_timestamp,
+        updated_at=datetime.utcnow() # Use current time for update timestamp
     )
 
 
