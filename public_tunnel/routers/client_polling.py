@@ -63,29 +63,5 @@ async def poll_commands_from_default_session(
     )
 
 
-@router.get(
-    "/api/sessions/{session_id}/poll", 
-    response_model=ClientPollingResponse,
-    summary="Client polls for commands in specified session",
-    description="Client polling for commands in a specific session (for collaboration mode)"
-)
-async def poll_commands_from_specified_session(
-    session_id: str,
-    client_id: str = Query(description="Unique client identifier"),
-    session_repo: SessionRepositoryDep = None,
-    client_repo: ClientRepositoryDep = None,
-    session_manager: SessionManagerDep = None
-) -> ClientPollingResponse:
-    """
-    Client polls for commands from specified session.
-    
-    This supports US-004: Specified Session Collaboration Mode
-    - Client joins existing session with specified session_id
-    - Client ID is recorded in the session
-    - Returns any pending commands for the client
-    """
-    # API Skeleton phase: Return 501 Not Implemented
-    raise HTTPException(
-        status_code=501,
-        detail="Specified session polling not implemented yet"
-    )
+# NOTE: poll_commands_from_specified_session will be implemented in US-004
+# US-003 only requires default session auto-join functionality
