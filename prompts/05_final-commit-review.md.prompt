@@ -30,6 +30,7 @@ git diff --cached
 - 沒有 debug statements（print, console.log, debugger）殘留
 - 沒有針對此 user story 的 TODO/FIXME comments
 - 所有新 dependencies 都已正確宣告
+- **已完成實作的 BDD scenarios 移除 @skip 標記**（實作完成的功能測試應該正常執行）
 
 ## 執行流程
 
@@ -97,6 +98,7 @@ feat: 實作使用者註冊功能
 - 所有 pytest 測試通過 → 自動執行 commit
 - Git staging area 只包含相關變更 → 自動執行 commit  
 - 沒有 debug 程式碼或未完成的 TODO 殘留 → 自動執行 commit
+- **已完成實作的 BDD scenarios 移除 @skip 標記** → 自動執行 commit
 - Commit message 遵循格式範本
 
 ## 執行原則
