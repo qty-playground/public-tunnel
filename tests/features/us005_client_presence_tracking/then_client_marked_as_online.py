@@ -9,10 +9,9 @@ def execute(context):
         f"/api/sessions/{context.expected_session_id}/clients/{context.client_id}/presence"
     )
     
-    # For now, expect 501 since presence tracking API is skeleton
-    # TODO: Update to expect 200 when presence tracking is implemented
-    assert presence_response.status_code in [200, 501], \
-        f"Presence query should return 200 or 501 (skeleton), got {presence_response.status_code}"
+    # Presence tracking is now implemented, should return 200
+    assert presence_response.status_code == 200, \
+        f"Presence query should return 200, got {presence_response.status_code}"
     
     if presence_response.status_code == 200:
         presence_data = presence_response.json()
