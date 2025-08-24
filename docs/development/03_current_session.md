@@ -8,8 +8,8 @@
 
 ## 當前狀態
 - **工作階段**: Phase B - 核心指令流程開發
-- **進行中的 User Story**: 無（US-006 已完成）
-- **下一個目標**: 選擇 Phase B 的下一個功能 (US-007, US-009, US-021)
+- **進行中的 User Story**: 無（US-007 已完成）
+- **下一個目標**: 選擇 Phase B 的下一個功能 (US-009, US-021)
 
 ## 已完成工作
 1. ✅ 分析專案設計文件和 User Stories
@@ -32,6 +32,12 @@
    - 實作指令隔離和 FIFO 佇列機制
    - API skeleton → GREEN Stage 1 → GREEN Stage 2 完整 TDD 循環
    - 驗證指令只會被發送給指定的目標 client
+8. ✅ 完成 US-007: Command FIFO Queue Management
+   - BDD 測試建立並通過，驗證 FIFO 順序和單指令約束
+   - 實作 `/api/sessions/{session_id}/clients/{client_id}/commands/poll` API 端點
+   - 確保每次 polling 只返回一個指令，嚴格遵循先進先出順序
+   - 完整的 RED-GREEN-REFACTOR TDD 循環實作
+   - 使用 CommandQueueManager 的 get_next_command_with_queue_info 整合
 
 ## 建立的文件
 1. **00_ai_workflow_guide.md** - AI 助手非互動模式開發指南

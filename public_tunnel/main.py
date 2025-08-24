@@ -6,6 +6,7 @@ from public_tunnel.routers import client_offline_status_enforcement
 from public_tunnel.routers import command_submit_to_client
 from public_tunnel.routers import submit_commands_to_target_clients
 from public_tunnel.routers import query_command_execution_status
+from public_tunnel.routers import fifo_command_polling
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -25,6 +26,9 @@ app.include_router(client_offline_status_enforcement.router)
 # US-006: Targeted Client Command Submission routers
 app.include_router(submit_commands_to_target_clients.router)
 app.include_router(query_command_execution_status.router)
+
+# US-007: Command FIFO Queue Management routers
+app.include_router(fifo_command_polling.router)
 
 
 @app.get("/")

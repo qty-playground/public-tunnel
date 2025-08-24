@@ -122,6 +122,40 @@ class CommandQueueManager:
                 
             return len(self._command_queues[session_id][client_id])
     
+    def get_next_command_with_queue_info(
+        self, 
+        session_id: str, 
+        client_id: str
+    ) -> tuple[Optional[Command], int]:
+        """
+        Get next command for specific client with queue size info (FIFO)
+        
+        US-007 enhancement: Returns both command and remaining queue size
+        
+        Args:
+            session_id: Session identifier
+            client_id: Client identifier requesting commands
+            
+        Returns:
+            tuple: (Command or None, remaining_queue_size)
+        """
+        with self._lock:
+            if session_id not in self._command_queues:
+                return None, 0
+                
+            if client_id not in self._command_queues[session_id]:
+                return None, 0
+            
+            client_queue = self._command_queues[session_id][client_id]
+            if not client_queue:
+                return None, 0
+                
+            # Get next command (FIFO)
+            command = client_queue.popleft()
+            remaining_size = len(client_queue)
+            
+            return command, remaining_size
+
     def get_all_clients_with_commands_in_session(self, session_id: str) -> Set[str]:
         """
         Get all clients that have pending commands in session

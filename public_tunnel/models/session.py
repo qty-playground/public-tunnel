@@ -46,3 +46,19 @@ class ClientRegistrationResponse(BaseModel):
     client_id: str = Field(description="Client ID that was registered")
     registration_timestamp: datetime = Field(description="When registration occurred")
     message: str = Field(description="Registration confirmation message")
+
+
+class FIFOCommandPollingResponse(BaseModel):
+    """US-007: Response model for FIFO command polling from specified session"""
+    session_id: str = Field(description="Session ID where client is polling")
+    client_id: str = Field(description="Client ID performing the polling")
+    command: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Single command returned in FIFO order (None if no commands)"
+    )
+    queue_position: int = Field(
+        description="Position in queue after this command (0 means no more commands)"
+    )
+    total_queue_size: int = Field(
+        description="Total number of commands remaining in queue for this client"
+    )
