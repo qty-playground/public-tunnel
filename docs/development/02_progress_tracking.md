@@ -7,12 +7,12 @@
 - **總 User Stories**: 22 個
 - **開發週期**: 10 週 (預估)
 - **開發方法**: BDD + TDD
-- **最後更新**: 2024-11-23
+- **最後更新**: 2025-08-24
 
 ### 進度總覽
 | 階段 | User Stories | 狀態 | 完成度 | 預計完成 |
 |------|-------------|------|--------|----------|
-| Phase A: 系統基石 | US-003, US-005, US-016 | Not Started | 0% | Week 2 |
+| Phase A: 系統基石 | US-003, US-005, US-016 | In Progress | 67% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Not Started | 0% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Not Started | 0% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
@@ -27,15 +27,20 @@
 - **相依**: 無
 - **阻塞**: 無
 - **測試狀態**: 完成並通過
-- **最後更新**: 2024-11-24 (實作完成)
+- **最後更新**: 2025-08-24 (實作完成)
 
 #### US-005: Client Presence Tracking
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-003
-- **阻塞**: 等待 US-003 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-24 (實作完成)
+- **實作內容**:
+  - 建立 ClientPresenceTracker 服務追蹤 client 在線狀態
+  - 整合到現有 polling API 中自動更新 last_seen timestamp
+  - 建立 presence query API 查詢 client 狀態
+  - 支援 online/offline 狀態判定基於可配置的超時閾值
 
 #### US-016: Client Offline Status Management
 - **狀態**: Not Started

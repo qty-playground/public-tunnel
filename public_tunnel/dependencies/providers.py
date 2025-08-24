@@ -110,9 +110,30 @@ def get_session_manager():
     pass
 
 
+def get_client_presence_tracker():
+    """Provide unified Client Presence Tracker service
+    
+    Returns the same ClientPresenceTracker instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        ClientPresenceTracker: Client presence tracking service instance
+    """
+    from public_tunnel.services.client_presence_tracker import InMemoryClientPresenceTracker
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_client_presence_tracker, '_instance'):
+        get_client_presence_tracker._instance = InMemoryClientPresenceTracker(
+            offline_threshold_seconds=60  # 1 minute threshold
+        )
+    
+    return get_client_presence_tracker._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
 ClientRepositoryDep = Annotated[object, Depends(get_client_repository)]
 CommandValidatorDep = Annotated[object, Depends(get_command_validator)]
 SessionManagerDep = Annotated[object, Depends(get_session_manager)]
+ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker)]

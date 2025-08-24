@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from public_tunnel.routers import client_poll_commands
+from public_tunnel.routers import track_client_presence
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -9,6 +10,7 @@ app = FastAPI(
 
 # Register routers
 app.include_router(client_poll_commands.router)
+app.include_router(track_client_presence.router)
 
 
 @app.get("/")

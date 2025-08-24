@@ -8,8 +8,8 @@
 
 ## 當前狀態
 - **工作階段**: Phase A - 系統基石開發
-- **進行中的 User Story**: 無（US-003 已完成）
-- **下一個目標**: 開始 US-005 - Client Presence Tracking
+- **進行中的 User Story**: 無（US-005 已完成）
+- **下一個目標**: 開始 US-016 - Client Offline Status Management
 
 ## 已完成工作
 1. ✅ 分析專案設計文件和 User Stories
@@ -21,6 +21,11 @@
    - API 骨架和真實實作
    - InMemorySessionRepository 實作
    - 雙重驗證測試（API + State）
+6. ✅ 完成 US-005: Client Presence Tracking
+   - BDD 測試建立並通過
+   - ClientPresenceTracker 服務實作
+   - 整合到現有 polling API
+   - Presence query API 實作
 
 ## 建立的文件
 1. **00_ai_workflow_guide.md** - AI 助手非互動模式開發指南
