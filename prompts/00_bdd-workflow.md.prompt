@@ -34,3 +34,5 @@
 - [ ] 程式碼符合統一的編碼風格和架構標準
 - [ ] 依賴性注入使用統一的 providers 管理
 - [ ] 系統準備好與 AI assistant 整合
+- [ ] 遵循 @prompts/05_final-commit-review.md.prompt 進行最終驗證和提交
+- [ ] 更新進度追蹤時使用當前日期（參考系統 <env> 中的 Today's date 或使用 `date +%Y-%m-%d` 命令）
