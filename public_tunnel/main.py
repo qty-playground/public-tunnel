@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from public_tunnel.routers import client_polling
+from public_tunnel.routers import client_poll_commands
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -8,7 +8,7 @@ app = FastAPI(
 )
 
 # Register routers
-app.include_router(client_polling.router)
+app.include_router(client_poll_commands.router)
 
 
 @app.get("/")
