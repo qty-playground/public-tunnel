@@ -54,6 +54,15 @@ class ClientCommandRetrievalResponse(BaseModel):
     queue_size: int = 0  # 剩餘佇列大小
 
 
+class NonExistentClientErrorResponse(BaseModel):
+    """US-013: 不存在 Client 錯誤回應模型"""
+    error_code: str = "CLIENT_NOT_FOUND"
+    error_message: str
+    session_id: str
+    target_client_id: str
+    timestamp: datetime
+
+
 class Command:
     """指令資料結構 - 基於 OOA 設計"""
     

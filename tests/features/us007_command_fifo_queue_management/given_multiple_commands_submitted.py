@@ -3,10 +3,12 @@ def execute(context):
     Setup multiple commands to be submitted to the same client
     
     This step prepares the test context with:
+    - Registered client (required by US-013)
     - Multiple command submissions to the same target client
     - Records the submission order for FIFO verification
     """
     from conftest import BDDPhase
+    from public_tunnel.dependencies.providers import get_client_presence_tracker
     
     context.phase = BDDPhase.GIVEN
     
@@ -14,6 +16,14 @@ def execute(context):
     context.session_id = "test-session-fifo"
     context.target_client_id = "client-fifo-test"
     context.timeout_seconds = 30
+    
+    # US-013 requirement: Client must register (via polling) before receiving commands
+    # Simulate client registration by updating client presence
+    client_presence_tracker = get_client_presence_tracker()
+    client_presence_tracker.update_client_last_seen(
+        client_id=context.target_client_id,
+        session_id=context.session_id
+    )
     
     # Define multiple commands in specific order
     context.test_commands = [
