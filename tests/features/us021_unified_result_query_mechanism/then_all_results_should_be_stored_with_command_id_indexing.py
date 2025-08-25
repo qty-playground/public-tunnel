@@ -5,24 +5,24 @@ def execute(context):
     context.phase = BDDPhase.THEN
     
     # TDD Phase: Expect successful result queries with command-id indexing
-    assert context.sync_response.status_code == 200, (
-        f"Expected 200 OK for sync command result query, got {context.sync_response.status_code}. "
-        f"Response: {context.sync_response.text}"
+    assert context.fast_response.status_code == 200, (
+        f"Expected 200 OK for fast command result query, got {context.fast_response.status_code}. "
+        f"Response: {context.fast_response.text}"
     )
     
-    assert context.async_response.status_code == 200, (
-        f"Expected 200 OK for async command result query, got {context.async_response.status_code}. "
-        f"Response: {context.async_response.text}"
+    assert context.slow_response.status_code == 200, (
+        f"Expected 200 OK for slow command result query, got {context.slow_response.status_code}. "
+        f"Response: {context.slow_response.text}"
     )
     
     # Verify both results have command-id indexing
-    sync_result = context.sync_response.json()
-    async_result = context.async_response.json()
+    fast_result = context.fast_response.json()
+    slow_result = context.slow_response.json()
     
-    assert sync_result["command_id"] == context.sync_command_id, (
-        f"Sync result should have command_id {context.sync_command_id}, got {sync_result.get('command_id')}"
+    assert fast_result["command_id"] == context.fast_command_id, (
+        f"Fast result should have command_id {context.fast_command_id}, got {fast_result.get('command_id')}"
     )
     
-    assert async_result["command_id"] == context.async_command_id, (
-        f"Async result should have command_id {context.async_command_id}, got {async_result.get('command_id')}"
+    assert slow_result["command_id"] == context.slow_command_id, (
+        f"Slow result should have command_id {context.slow_command_id}, got {slow_result.get('command_id')}"
     )

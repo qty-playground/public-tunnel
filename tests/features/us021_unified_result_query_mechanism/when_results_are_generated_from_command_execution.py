@@ -4,14 +4,14 @@ def execute(context):
     
     context.phase = BDDPhase.WHEN
     
-    # Try to query sync command result through unified API
-    sync_response = context.test_client.get(
-        f"/api/sessions/{context.session_id}/results/{context.sync_command_id}"
+    # Try to query fast command result through unified API
+    fast_response = context.test_client.get(
+        f"/api/sessions/{context.session_id}/results/{context.fast_command_id}"
     )
-    context.sync_response = sync_response
+    context.fast_response = fast_response
     
-    # Try to query async command result through unified API
-    async_response = context.test_client.get(
-        f"/api/sessions/{context.session_id}/results/{context.async_command_id}"
+    # Try to query slow command result through unified API
+    slow_response = context.test_client.get(
+        f"/api/sessions/{context.session_id}/results/{context.slow_command_id}"
     )
-    context.async_response = async_response
+    context.slow_response = slow_response
