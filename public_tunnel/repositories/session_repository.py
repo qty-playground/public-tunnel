@@ -54,6 +54,15 @@ class InMemorySessionRepository:
         """
         self._ensure_default_session_exists()
         
+        # US-004: Create session if it doesn't exist (for specified session collaboration)
+        if session_id not in self._sessions:
+            self._sessions[session_id] = SessionInfo(
+                session_id=session_id,
+                client_count=0,
+                created_at=datetime.now(),
+                default_session=(session_id == "default")
+            )
+        
         if session_id not in self._session_clients:
             self._session_clients[session_id] = set()
         

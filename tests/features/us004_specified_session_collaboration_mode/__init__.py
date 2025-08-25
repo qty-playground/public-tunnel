@@ -1,0 +1,1 @@
+# US-004: Specified Session Collaboration Mode test package
