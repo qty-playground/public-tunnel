@@ -7,6 +7,7 @@ File - 檔案資料結構
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
 import uuid
 
 
@@ -55,6 +56,41 @@ class SessionFileListResponse(BaseModel):
     session_id: str
     total_files: int
     files: List[FileMetadataResponse]
+
+
+# US-012: Session File Access Isolation Models
+class FileAccessDenialReason(str, Enum):
+    """檔案存取被拒絕的原因"""
+    CROSS_SESSION_ACCESS = "cross_session_access"
+    FILE_NOT_FOUND = "file_not_found"  
+    SESSION_NOT_EXISTS = "session_not_exists"
+
+
+class SessionFileAccessValidationRequest(BaseModel):
+    """Session 檔案存取驗證請求"""
+    requesting_session_id: str
+    target_file_id: str
+    file_owner_session_id: Optional[str] = None
+
+
+class SessionFileAccessValidationResponse(BaseModel):
+    """Session 檔案存取驗證回應"""
+    access_granted: bool
+    file_id: str
+    requesting_session_id: str
+    file_owner_session_id: Optional[str] = None
+    denial_reason: Optional[FileAccessDenialReason] = None
+    error_message: Optional[str] = None
+
+
+class CrossSessionAccessDeniedResponse(BaseModel):
+    """跨 Session 存取被拒回應模型"""
+    error_type: str = "cross_session_access_denied"
+    requested_file_id: str
+    requesting_session_id: str
+    file_owner_session_id: str
+    message: str
+    timestamp: datetime = datetime.now()
 
 
 class File:

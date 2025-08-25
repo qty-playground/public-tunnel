@@ -213,6 +213,28 @@ def get_file_manager():
     return get_file_manager._instance
 
 
+def get_session_file_access_validator():
+    """Provide unified Session File Access Validator service
+    
+    Returns the same SessionFileAccessValidator instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        SessionFileAccessValidator: Session file access validation service instance
+        
+    Note: US-012 implementation - validates file access permissions across sessions
+    """
+    from public_tunnel.services.session_file_access_validator import InMemorySessionFileAccessValidator
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_session_file_access_validator, '_instance'):
+        # Get the file manager instance for file ownership validation
+        file_manager = get_file_manager()
+        get_session_file_access_validator._instance = InMemorySessionFileAccessValidator(file_manager)
+    
+    return get_session_file_access_validator._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
@@ -224,3 +246,4 @@ ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker
 OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
 ExecutionResultManagerDep = Annotated[object, Depends(get_execution_result_manager)]
 FileManagerDep = Annotated[object, Depends(get_file_manager)]
+SessionFileAccessValidatorDep = Annotated['InMemorySessionFileAccessValidator', Depends(get_session_file_access_validator)]

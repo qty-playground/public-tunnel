@@ -13,6 +13,7 @@ from public_tunnel.routers import client_execution_error_reporting
 from public_tunnel.routers import upload_files_to_session
 from public_tunnel.routers import download_files_from_session
 from public_tunnel.routers import list_session_files
+from public_tunnel.routers import session_file_access_isolation
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -49,6 +50,9 @@ app.include_router(client_execution_error_reporting.router)
 app.include_router(upload_files_to_session.router)
 app.include_router(download_files_from_session.router) 
 app.include_router(list_session_files.router)
+
+# US-012: Session File Access Isolation router
+app.include_router(session_file_access_isolation.router)
 
 
 @app.get("/")

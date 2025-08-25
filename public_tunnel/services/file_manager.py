@@ -203,6 +203,24 @@ class FileManager:
                 return 0
                 
             return len(self._session_files[session_id])
+    
+    def get_file_info(self, file_id: str) -> Optional[File]:
+        """
+        Get file information by file ID across all sessions
+        
+        Args:
+            file_id: File unique identifier
+            
+        Returns:
+            File: File object if found, None otherwise
+            
+        Note: Used by SessionFileAccessValidator to validate file ownership
+        """
+        with self._lock:
+            for session_id, session_files in self._session_files.items():
+                if file_id in session_files:
+                    return session_files[file_id]
+            return None
 
 
 class InMemoryFileManager(FileManager):

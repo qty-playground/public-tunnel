@@ -14,7 +14,7 @@
 |------|-------------|------|--------|----------|
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
-| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 57% | Week 6 |
+| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 71% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
 
@@ -181,12 +181,19 @@
   - 整合依賴注入系統與路由註冊
 
 #### US-012: Session File Access Isolation
-- **狀態**: Not Started
-- **完成度**: 0%
-- **相依**: US-003
-- **阻塞**: 等待 US-003 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **狀態**: Completed
+- **完成度**: 100%
+- **相依**: US-010
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 建立 SessionFileAccessValidator 服務實作檔案存取隔離檢查
+  - 實作檔案存取驗證 API endpoint 檢查跨 session 存取權限
+  - 建立安全檔案下載功能，防止未經授權的檔案存取
+  - 實作存取違規記錄與審計機制
+  - 整合到現有檔案管理系統，確保所有檔案存取都經過權限驗證
+  - 完整的 BDD 測試覆蓋，驗證 session 隔離和存取控制機制
 
 #### US-011: Client Result File Upload
 - **狀態**: Not Started
