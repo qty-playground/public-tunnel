@@ -273,17 +273,18 @@ Acceptance Criteria:
 - And each polling should return only one command
 ```
 
-**US-008**: Sync To Async Auto Switch
+**US-008**: Auto Async Response with Initial Wait
 ```
 As a server
-I want to automatically switch sync to async when execution takes too long
-So that the system remains responsive
+I want to wait briefly for command completion before switching to async response
+So that fast commands return immediately while slow commands use polling
 
 Acceptance Criteria:
-- Given a command is submitted in sync mode
-- When execution time exceeds the configured threshold
-- Then the response should switch to async mode
-- And a command-id should be returned for polling
+- Given a command is submitted
+- When execution completes within the configured threshold
+- Then the result should be returned immediately
+- When execution exceeds the threshold
+- Then a command-id should be returned for polling
 ```
 
 **US-009**: Client Single Command Retrieval
@@ -299,30 +300,23 @@ Acceptance Criteria:
 - And that command should be removed from the queue
 ```
 
-**US-020**: Sync Async Mode Selection
+**US-020**: ~~Sync Async Mode Selection~~ (廢棄)
 ```
-As an AI assistant
-I want to choose sync/async mode based on expected execution time
-So that I can optimize response handling
-
-Acceptance Criteria:
-- Given I'm submitting a command
-- When I specify sync or async mode
-- Then the server should handle the command accordingly
-- And the response format should match the chosen mode
+此 User Story 已廢棄，因為系統不再支援主動選擇同步或非同步模式。
+所有指令均採用自動轉換機制（參見 US-008）。
 ```
 
 **US-021**: Unified Result Query Mechanism
 ```
 As a server
-I want to handle both sync and async commands through the same result mechanism
+I want to handle all commands through the same result mechanism
 So that result management is consistent
 
 Acceptance Criteria:
-- Given commands in both sync and async modes
+- Given commands are submitted (with automatic timeout handling)
 - When results are generated
 - Then all results should be stored with command-id indexing
-- And results should be queryable through the same API
+- And results should be queryable through the same API regardless of execution time
 ```
 
 ### 錯誤處理
