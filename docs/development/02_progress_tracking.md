@@ -14,7 +14,7 @@
 |------|-------------|------|--------|----------|
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
-| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 71% | Week 6 |
+| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 86% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
 
@@ -196,12 +196,20 @@
   - 完整的 BDD 測試覆蓋，驗證 session 隔離和存取控制機制
 
 #### US-011: Client Result File Upload
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-010 (間接)
-- **阻塞**: 無直接阻塞，可與其他檔案功能並行
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 實作 Client 結果檔案上傳 API endpoint (`/api/sessions/{session_id}/commands/{command_id}/result-with-files`)
+  - 建立檔案與 metadata 同時上傳機制，支援 Base64 編碼內容
+  - 每個檔案都有唯一 file-id、原始 filename 和描述性 summary
+  - AI 可透過既有檔案管理 API 選擇性瀏覽和下載結果檔案
+  - 整合統一結果查詢機制，結果檔案與執行結果關聯儲存
+  - 建立 ClientResultSubmissionWithFiles 完整請求/回應模型
+  - 完整的 BDD 測試覆蓋，驗證檔案上傳與 AI 瀏覽功能
 
 #### US-022: File Unique Identification
 - **狀態**: Not Started
