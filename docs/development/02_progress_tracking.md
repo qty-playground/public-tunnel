@@ -300,18 +300,26 @@
 
 #### 權限管理群組 (E2)
 #### US-001: Admin Session List Query
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-003
-- **阻塞**: 等待 US-003 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 新增 AdminSessionListResponse Pydantic 模型支援管理員查詢回應格式
+  - 實作 AdminTokenValidator 服務提供環境變數 token 驗證機制
+  - 建立 GET /api/sessions 端點，支援 admin token 認證
+  - 擴展 InMemorySessionRepository 新增 get_all_sessions 方法
+  - 整合統一依賴注入架構，新增 AdminTokenValidatorDep
+  - 建立完整的 BDD 測試覆蓋，驗證管理員權限和 session 查詢功能
+  - 遵循 HTTP 403 錯誤處理，token 無效時拒絕存取
 
 #### US-002: Regular User Access Restriction
 - **狀態**: Not Started
 - **完成度**: 0%
 - **相依**: US-001
-- **阻塞**: 等待 US-001 完成
+- **阻塞**: 無 (US-001 已完成)
 - **測試狀態**: 未建立
 - **最後更新**: -
 
