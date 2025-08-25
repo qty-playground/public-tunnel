@@ -5,9 +5,12 @@ ExecutionResult - 執行結果資料結構
 """
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from enum import Enum
+
+if TYPE_CHECKING:
+    from public_tunnel.models.file import ClientResultFileUploadRequest, ClientResultFileUploadResponse
 
 
 class CommandExecutionMode(str, Enum):

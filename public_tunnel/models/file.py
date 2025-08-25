@@ -93,6 +93,36 @@ class CrossSessionAccessDeniedResponse(BaseModel):
     timestamp: datetime = datetime.now()
 
 
+# US-011: Client Result File Upload Models
+class ClientResultFileUploadRequest(BaseModel):
+    """Client 結果檔案上傳請求模型"""
+    file_name: str
+    file_content_base64: str  # Base64 編碼的檔案內容
+    content_type: Optional[str] = "application/octet-stream"
+    file_summary: Optional[str] = None  # Client 可提供檔案摘要
+
+
+class ClientResultFileUploadResponse(BaseModel):
+    """Client 結果檔案上傳回應模型"""
+    file_id: str
+    file_name: str
+    session_id: str
+    upload_timestamp: datetime
+    file_size_bytes: int
+    content_type: str
+    file_summary: Optional[str] = None
+
+
+class ClientResultFileMetadataResponse(BaseModel):
+    """Client 結果檔案元數據回應模型"""
+    file_id: str
+    file_name: str
+    content_type: str
+    file_size_bytes: int
+    upload_timestamp: datetime
+    file_summary: Optional[str] = None
+
+
 class File:
     """檔案資料結構 - 基於 OOA 設計"""
     
