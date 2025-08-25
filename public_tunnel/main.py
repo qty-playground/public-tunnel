@@ -15,6 +15,7 @@ from public_tunnel.routers import download_files_from_session
 from public_tunnel.routers import list_session_files
 from public_tunnel.routers import session_file_access_isolation
 from public_tunnel.routers import client_result_file_upload
+from public_tunnel.routers import auto_async_command_submission
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -57,6 +58,9 @@ app.include_router(session_file_access_isolation.router)
 
 # US-011: Client Result File Upload router
 app.include_router(client_result_file_upload.router)
+
+# US-008: Auto Async Command Submission router
+app.include_router(auto_async_command_submission.router)
 
 
 

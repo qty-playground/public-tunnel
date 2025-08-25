@@ -63,6 +63,15 @@ class NonExistentClientErrorResponse(BaseModel):
     timestamp: datetime
 
 
+class AutoAsyncCommandResponse(BaseModel):
+    """US-008: Auto Async Command Response 模型"""
+    command_id: str
+    async_mode: bool  # True if switched to async, False if immediate response
+    result: Optional[str] = None  # Immediate result if async_mode=False
+    submission_timestamp: datetime
+    target_client_id: str
+
+
 class Command:
     """指令資料結構 - 基於 OOA 設計"""
     
