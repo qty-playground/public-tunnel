@@ -235,6 +235,28 @@ def get_session_file_access_validator():
     return get_session_file_access_validator._instance
 
 
+def get_admin_token_validator():
+    """Provide unified Admin Token Validator service
+    
+    Returns the same AdminTokenValidator instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        AdminTokenValidator: Admin token validation service instance
+        
+    Note: US-001 implementation - validates admin tokens from environment variable
+    """
+    from public_tunnel.services.admin_token_validator import AdminTokenValidator
+    import os
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_admin_token_validator, '_instance'):
+        admin_token = os.getenv('PUBLIC_TUNNEL_ADMIN_TOKEN', 'default-admin-token')
+        get_admin_token_validator._instance = AdminTokenValidator(admin_token)
+    
+    return get_admin_token_validator._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
@@ -247,3 +269,4 @@ OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
 ExecutionResultManagerDep = Annotated[object, Depends(get_execution_result_manager)]
 FileManagerDep = Annotated[object, Depends(get_file_manager)]
 SessionFileAccessValidatorDep = Annotated['InMemorySessionFileAccessValidator', Depends(get_session_file_access_validator)]
+AdminTokenValidatorDep = Annotated['AdminTokenValidator', Depends(get_admin_token_validator)]

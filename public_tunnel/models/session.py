@@ -73,3 +73,16 @@ class SessionCommandHistoryResponse(BaseModel):
     total_commands: int = Field(
         description="Total number of commands in the session history"
     )
+
+
+class AdminSessionListResponse(BaseModel):
+    """US-001: Response model for admin session list query"""
+    sessions: List[SessionInfo] = Field(
+        description="List of all sessions in the system"
+    )
+    total_sessions: int = Field(
+        description="Total number of sessions"
+    )
+    queried_at: datetime = Field(
+        description="Timestamp when the query was performed"
+    )

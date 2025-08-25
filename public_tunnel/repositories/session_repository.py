@@ -84,3 +84,12 @@ class InMemorySessionRepository:
     def get_clients_in_session(self, session_id: str) -> Set[str]:
         """獲取 session 中的所有 client IDs"""
         return self._session_clients.get(session_id, set()).copy()
+    
+    def get_all_sessions(self) -> list[SessionInfo]:
+        """
+        US-001: Get all sessions for admin query
+        
+        Returns:
+            list[SessionInfo]: List of all sessions in the system
+        """
+        return list(self._sessions.values())

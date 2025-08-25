@@ -17,6 +17,7 @@ from public_tunnel.routers import session_file_access_isolation
 from public_tunnel.routers import client_result_file_upload
 from public_tunnel.routers import auto_async_command_submission
 from public_tunnel.routers import session_command_history_query
+from public_tunnel.routers import list_all_sessions_for_admin
 
 app = FastAPI(
     title="Public Tunnel API",
@@ -65,6 +66,9 @@ app.include_router(auto_async_command_submission.router)
 
 # US-019: Session Command History Query router
 app.include_router(session_command_history_query.router)
+
+# US-001: Admin Session List Query router
+app.include_router(list_all_sessions_for_admin.router)
 
 
 
