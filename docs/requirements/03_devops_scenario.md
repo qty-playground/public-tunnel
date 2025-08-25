@@ -93,7 +93,7 @@ AI 助手 ⟷ Public-tunnel Server ⟷ Client 端（遠端環境）
 
 **🤖 AI 助手**：
 - **指令送出**：透過 HTTP API 提交指令到 server
-- **執行模式選擇**：可選同步模式（快速回應）或非同步模式（長時間任務）
+- **自動處理機制**：系統自動處理快速回應或長時間任務的執行模式
 - **結果查詢**：使用 command-id 追蹤和取得執行結果
 - **檔案管理**：上傳檔案供 client 使用，下載執行結果檔案
 - **Session 管理**：管理不同環境的協作空間
@@ -143,16 +143,15 @@ GET /api/session/prod-debug-20241123/clients
 }
 ```
 
-#### 步驟 3：AI 助手同步執行資料收集指令
+#### 步驟 3：AI 助手執行快速資料收集指令
 ```http
 POST /api/session/prod-debug-20241123/command
 {
   "target_client": "web-frontend",
-  "command": "nginx -t && systemctl status nginx && tail -n 50 /var/log/nginx/access.log",
-  "mode": "sync"
+  "command": "nginx -t && systemctl status nginx && tail -n 50 /var/log/nginx/access.log"
 }
 
-立即回應：
+立即回應（快速執行）：
 {
   "command_id": "cmd-abc123",
   "status": "completed", 
@@ -161,23 +160,22 @@ POST /api/session/prod-debug-20241123/command
 }
 ```
 
-#### 步驟 4：AI 助手非同步執行長時間任務
+#### 步驟 4：AI 助手執行長時間任務
 ```http
 POST /api/session/prod-debug-20241123/command
 {
   "target_client": "db-server",
-  "command": "mysqldump --single-transaction performance_schema > /tmp/perf_analysis.sql",
-  "mode": "async"
+  "command": "mysqldump --single-transaction performance_schema > /tmp/perf_analysis.sql"
 }
 
-立即回應：
+立即回應（自動轉為非同步）：
 {
   "command_id": "cmd-def456",
   "status": "submitted"
 }
 ```
 
-#### 步驟 5：AI 助手查詢非同步任務狀態
+#### 步驟 5：AI 助手查詢長時間任務狀態
 ```http
 GET /api/session/prod-debug-20241123/result/cmd-def456
 
@@ -205,9 +203,9 @@ GET /api/session/prod-debug-20241123/files/file-789xyz
 
 ### 核心功能特色
 
-**🔄 自動模式切換**：
-- 同步模式超過設定時間自動轉為非同步
-- AI 助手無需預判任務執行時間
+**🔄 自動執行處理**：
+- 快速任務立即回應結果，長時間任務自動轉為非同步查詢
+- AI 助手無需預判任務執行時間，系統自動最佳化處理
 
 **📁 智能檔案管理**：
 - 複雜結果自動上傳為檔案並提供摘要
@@ -248,7 +246,7 @@ AI: 「幫我檢查 web 層和 db 層的連線狀況」
 **📊 定期安全稽核**：
 ```  
 AI: 「執行每週安全檢查腳本並生成報告」
-→ 長時間非同步執行
+→ 系統自動處理長時間執行任務
 → AI 在其他工作完成後取得稽核報告
 ```
 
