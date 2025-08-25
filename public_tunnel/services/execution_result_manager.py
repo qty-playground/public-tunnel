@@ -5,7 +5,7 @@ Manages unified result storage and query for all commands with automatic timeout
 Implementation of US-021: Unified Result Query Mechanism.
 """
 
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from datetime import datetime
 
 from public_tunnel.models.execution_result import (
@@ -134,6 +134,23 @@ class InMemoryExecutionResultManager:
             return None
         
         return result.to_unified_response()
+    
+    def get_command_ids_by_session(self, session_id: str) -> List[str]:
+        """Get all command IDs that have been executed in a session
+        
+        Args:
+            session_id: Session identifier to query
+            
+        Returns:
+            List of command IDs that have results in this session
+        """
+        command_ids = []
+        for command_id, result in self._results.items():
+            if result.session_id == session_id:
+                command_ids.append(command_id)
+        
+        # Return in creation order (based on storage order)
+        return command_ids
     
     def clear_all_results(self) -> None:
         """Clear all stored results (for testing)"""

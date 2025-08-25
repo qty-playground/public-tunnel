@@ -62,3 +62,14 @@ class FIFOCommandPollingResponse(BaseModel):
     total_queue_size: int = Field(
         description="Total number of commands remaining in queue for this client"
     )
+
+
+class SessionCommandHistoryResponse(BaseModel):
+    """US-019: Response model for session command history query"""
+    session_id: str = Field(description="Session ID being queried")
+    command_ids: List[str] = Field(
+        description="List of command IDs that have been executed in this session"
+    )
+    total_commands: int = Field(
+        description="Total number of commands in the session history"
+    )
