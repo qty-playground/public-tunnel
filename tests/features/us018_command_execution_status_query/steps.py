@@ -1,0 +1,16 @@
+from pytest_bdd import scenarios
+
+from .given_i_have_submitted_a_command_that_is_pending_execution import *
+from .given_i_have_a_command_that_is_currently_running import *
+from .given_i_have_a_command_that_has_been_completed import *
+from .given_i_have_a_non_existent_command_id import *
+from .when_i_query_the_command_status_using_command_id import *
+from .when_i_query_the_command_status_using_that_command_id import *
+from .then_i_should_receive_current_execution_status import *
+from .then_i_should_know_that_the_command_is_pending import *
+from .then_i_should_know_that_the_command_is_running import *
+from .then_i_should_know_that_the_command_is_completed import *
+from .then_i_should_receive_an_appropriate_error_response import *
+from .then_the_error_should_indicate_that_the_command_was_not_found import *
+
+scenarios("story.feature")
