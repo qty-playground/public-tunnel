@@ -250,12 +250,20 @@
 - **最後更新**: 2025-08-25 (標記為廢棄)
 
 #### US-008: Auto Async Response with Initial Wait
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-021
-- **阻塞**: 無（US-021 已完成）
-- **測試狀態**: 未建立
-- **最後更新**: 2025-08-25 (移除對廢棄 US-020 的相依)
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 新增 POST `/api/sessions/{session_id}/commands/submit-auto-async` API 端點
+  - 實作自動同步/非同步切換邏輯，基於指令內容模擬執行時間
+  - 快速指令（echo）立即返回結果，慢速指令（含 sleep）返回 command-id
+  - 整合統一結果查詢機制 (US-021)，支援 async 模式的結果 polling
+  - 新增 AutoAsyncCommandResponse 模型支援雙模式回應格式
+  - 建立完整的 BDD 測試覆蓋快速與慢速執行情境
+  - 整合現有錯誤處理（US-014）和指令佇列管理系統
 
 ### Phase E: 監控與管理
 
