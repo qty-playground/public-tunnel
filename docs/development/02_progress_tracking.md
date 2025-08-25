@@ -7,14 +7,14 @@
 - **總 User Stories**: 22 個
 - **開發週期**: 10 週 (預估)
 - **開發方法**: BDD + TDD
-- **最後更新**: 2025-08-24
+- **最後更新**: 2025-08-25
 
 ### 進度總覽
 | 階段 | User Stories | 狀態 | 完成度 | 預計完成 |
 |------|-------------|------|--------|----------|
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
-| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Not Started | 0% | Week 6 |
+| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 14% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
 
@@ -119,12 +119,19 @@
 
 #### 錯誤處理群組 (C1)
 #### US-013: Non Existent Client Error Handling
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-006
-- **阻塞**: 無（US-006 已完成）
-- **測試狀態**: 未建立
-- **最後更新**: 2025-08-24 (解除阻塞)
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 新增 NonExistentClientErrorResponse 錯誤回應模型
+  - 增強 submit_commands_to_target_clients API 的錯誤檢查機制  
+  - 實作 404 錯誤回應當 client 未透過 polling 註冊
+  - 修復 US-006 和 US-007 測試以符合新的客戶端註冊規範
+  - 提供完整的 BDD 測試覆蓋與錯誤處理驗證
+  - 確保向後相容性，現有功能不受影響
 
 #### US-014: Offline Client Command Rejection
 - **狀態**: Not Started
