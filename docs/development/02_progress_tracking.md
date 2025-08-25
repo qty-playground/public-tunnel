@@ -229,12 +229,19 @@
 
 ### Phase D: 進階功能
 #### US-004: Specified Session Collaboration Mode
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-003
-- **阻塞**: 等待 US-003 完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 新增 POST `/api/sessions/{session_id}/poll` API 端點支援指定 session 的客戶端 polling
+  - 擴展 InMemorySessionRepository 以支援任意 session ID 的建立和管理
+  - 實作客戶端透過指定 session-id 加入現有 session 的協作模式
+  - 支援多個客戶端同時加入同一個 session 進行協作
+  - 建立完整的 BDD 測試覆蓋 session 加入與協作驗證功能
+  - 整合現有的客戶端狀態追蹤和依賴注入架構
 
 #### ~~US-020: Sync Async Mode Selection~~ (廢棄)
 - **狀態**: 廢棄
