@@ -24,6 +24,5 @@ def execute(context):
             f"Command {i}: expected '{expected_content}', but got '{received_content}'"
     
     # Verify the order matches submission order
-    print("FIFO order verification passed:")
-    for i, received_command_info in enumerate(context.received_commands):
-        print(f"  Position {i}: {received_command_info['command']['content']}")
+    # FIFO order verification passed
+    # Commands received in correct order

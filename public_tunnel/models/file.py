@@ -5,7 +5,7 @@ File - 檔案資料結構
 """
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime
 from enum import Enum
 import uuid
@@ -187,3 +187,75 @@ class File:
             "created_time": self.created_time,
             "file_summary": self.file_summary
         }
+
+
+# US-022: File Unique Identification Models
+class FileUniqueIdentificationRequest(BaseModel):
+    """檔案唯一識別請求模型"""
+    filename: Optional[str] = None
+    min_size_bytes: Optional[int] = None
+    max_size_bytes: Optional[int] = None
+    content_type: Optional[str] = None
+    uploaded_after: Optional[datetime] = None
+    uploaded_before: Optional[datetime] = None
+
+
+class FileUniqueIdentificationResponse(BaseModel):
+    """檔案唯一識別回應模型"""
+    session_id: str
+    total_matching_files: int
+    files: List[FileMetadataResponse]
+    duplicate_filename_groups: List[str]  # 有重複的檔名列表
+
+
+class FileDuplicateGroup(BaseModel):
+    """重複檔名群組模型"""
+    filename: str
+    duplicate_count: int
+    files: List[FileMetadataResponse]
+
+
+class DuplicateFilenameAnalysisResponse(BaseModel):
+    """重複檔名分析回應模型"""
+    session_id: str
+    total_unique_filenames: int
+    total_duplicate_groups: int
+    duplicate_groups: List[FileDuplicateGroup]
+
+
+class FileComparisonRequest(BaseModel):
+    """檔案比較請求模型"""
+    file_ids: List[str]
+
+
+class FileComparisonItem(BaseModel):
+    """檔案比較項目模型"""
+    file_id: str
+    file_name: str
+    file_size_bytes: int
+    content_type: str
+    upload_timestamp: datetime
+    file_summary: Optional[str] = None
+    content_hash: Optional[str] = None  # MD5 或 SHA256 hash
+
+
+class FileComparisonResponse(BaseModel):
+    """檔案比較回應模型"""
+    session_id: str
+    comparison_count: int
+    files: List[FileComparisonItem]
+    identical_content_pairs: List[Tuple[str, str]]  # (file_id1, file_id2) 內容相同的檔案對
+    same_filename_count: int
+
+
+class EnhancedFileMetadataResponse(BaseModel):
+    """增強版檔案 metadata 回應模型"""
+    file_id: str
+    file_name: str
+    content_type: str
+    file_size_bytes: int
+    upload_timestamp: datetime
+    file_summary: Optional[str] = None
+    content_hash: str  # 檔案內容的 hash
+    same_filename_count_in_session: int  # 同 session 中相同檔名的檔案數量
+    is_content_unique_in_session: bool  # 在 session 中檔案內容是否唯一

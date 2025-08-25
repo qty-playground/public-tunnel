@@ -31,6 +31,5 @@ def execute(context):
     assert successful_polls == total_commands, \
         f"Inconsistent polling results: {successful_polls} successful polls vs {total_commands} commands"
     
-    print("Single command per polling verification passed:")
-    for i, received_command_info in enumerate(context.received_commands):
-        print(f"  Polling attempt {received_command_info['attempt']}: 1 command returned")
+    # Single command per polling verification passed
+    # Each polling attempt returned exactly 1 command
