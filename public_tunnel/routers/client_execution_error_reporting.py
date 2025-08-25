@@ -12,8 +12,7 @@ from typing import Dict, Any
 from public_tunnel.models.execution_result import (
     ExecutionResultSubmissionRequest,
     ExecutionResultStatus,
-    UnifiedResultQueryResponse,
-    CommandExecutionMode
+    UnifiedResultQueryResponse
 )
 from public_tunnel.dependencies.providers import SessionRepositoryDep, ExecutionResultManagerDep
 
@@ -37,20 +36,7 @@ def _extract_client_id_from_error_context(error_request: ExecutionResultSubmissi
     return "test-client-error"
 
 
-def _determine_execution_mode_from_context(command_id: str) -> CommandExecutionMode:
-    """Determine execution mode from command context
-    
-    In a complete implementation, this would lookup the original command
-    to determine if it was sync or async. For now, defaults to SYNC.
-    
-    Args:
-        command_id: Command identifier for mode lookup
-        
-    Returns:
-        CommandExecutionMode for unified result storage
-    """
-    # In production: lookup original command mode from command repository
-    return CommandExecutionMode.SYNC
+# Removed _determine_execution_mode_from_context as CommandExecutionMode is no longer needed
 
 
 def _build_error_submission_confirmation_response(execution_result) -> Dict[str, Any]:
@@ -163,7 +149,6 @@ async def report_command_execution_error(
         command_id=command_id,
         session_id=session_id,
         client_id=_extract_client_id_from_error_context(error_request, session_id),
-        execution_mode=_determine_execution_mode_from_context(command_id),
         execution_status=ExecutionResultStatus.FAILED,
         error_message=error_request.error_message
     )

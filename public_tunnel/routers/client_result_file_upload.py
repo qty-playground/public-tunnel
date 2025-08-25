@@ -9,10 +9,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 
-from public_tunnel.models.execution_result import (
-    ExecutionResultStatus,
-    CommandExecutionMode
-)
+from public_tunnel.models.execution_result import ExecutionResultStatus
 from public_tunnel.models.file import (
     ClientResultFileUploadRequest,
     ClientResultFileUploadResponse,
@@ -56,9 +53,7 @@ def _resolve_client_id_for_result_submission(session_id: str, command_id: str) -
     return "test-client-upload"
 
 
-def _determine_original_command_execution_mode(command_id: str) -> CommandExecutionMode:
-    """Determine original command execution mode for unified storage"""
-    return CommandExecutionMode.ASYNC
+# Removed _determine_original_command_execution_mode as CommandExecutionMode is no longer needed
 
 
 def _upload_execution_result_files_to_session_storage(
@@ -113,13 +108,11 @@ def _create_execution_result_with_uploaded_file_references(
 ) -> "ExecutionResult":
     """Create and store execution result with uploaded file references"""
     client_id = _resolve_client_id_for_result_submission(session_id, command_id)
-    execution_mode = _determine_original_command_execution_mode(command_id)
     
     execution_result = result_manager.create_and_store_result(
         command_id=command_id,
         session_id=session_id,
         client_id=client_id,
-        execution_mode=execution_mode,
         execution_status=submission_request.execution_status,
         result_content=submission_request.result_content,
         error_message=submission_request.error_message

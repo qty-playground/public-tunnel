@@ -1,7 +1,7 @@
 """
 Execution Result Manager Service
 
-Manages unified result storage and query for both sync and async commands.
+Manages unified result storage and query for all commands with automatic timeout handling.
 Implementation of US-021: Unified Result Query Mechanism.
 """
 
@@ -11,7 +11,6 @@ from datetime import datetime
 from public_tunnel.models.execution_result import (
     ExecutionResult, 
     ExecutionResultStatus,
-    CommandExecutionMode,
     UnifiedResultQueryResponse
 )
 
@@ -19,7 +18,7 @@ from public_tunnel.models.execution_result import (
 class InMemoryExecutionResultManager:
     """In-memory implementation of execution result management
     
-    Provides unified storage and query for both sync and async command results.
+    Provides unified storage and query for all command results.
     Results are indexed by command_id for consistent access.
     """
     
@@ -51,7 +50,6 @@ class InMemoryExecutionResultManager:
         command_id: str,
         session_id: str,
         client_id: str,
-        execution_mode: CommandExecutionMode,
         execution_status: ExecutionResultStatus = ExecutionResultStatus.PENDING,
         result_content: Optional[str] = None,
         error_message: Optional[str] = None
@@ -62,7 +60,6 @@ class InMemoryExecutionResultManager:
             command_id: Command identifier for indexing
             session_id: Session identifier
             client_id: Client identifier
-            execution_mode: Whether this was sync or async execution
             execution_status: Current execution status
             result_content: Execution result content (optional)
             error_message: Error message if failed (optional)
@@ -74,8 +71,7 @@ class InMemoryExecutionResultManager:
             command_id=command_id,
             execution_status=execution_status,
             client_id=client_id,
-            session_id=session_id,
-            execution_mode=execution_mode
+            session_id=session_id
         )
         
         if result_content:

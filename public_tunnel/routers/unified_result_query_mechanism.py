@@ -1,7 +1,7 @@
 """
 US-021: Unified Result Query Mechanism Router
 
-Provides unified query mechanism for both sync and async command results.
+Provides unified query mechanism for all command results with automatic timeout handling.
 This is the server-side implementation of consistent result management.
 """
 
@@ -13,19 +13,7 @@ from public_tunnel.dependencies.providers import SessionRepositoryDep, Execution
 router = APIRouter(tags=["unified-result-query-mechanism"])
 
 
-def _determine_execution_mode_from_command_id(command_id: str) -> "CommandExecutionMode":
-    """Determine execution mode based on command_id pattern
-    
-    Args:
-        command_id: Command identifier to analyze
-        
-    Returns:
-        CommandExecutionMode: Determined execution mode
-    """
-    from public_tunnel.models.execution_result import CommandExecutionMode
-    
-    return (CommandExecutionMode.ASYNC if command_id.startswith("async-") 
-            else CommandExecutionMode.SYNC)
+# Removed _determine_execution_mode_from_command_id as CommandExecutionMode is no longer needed
 
 
 def _handle_missing_result(
@@ -49,14 +37,11 @@ def _handle_missing_result(
     from public_tunnel.models.execution_result import ExecutionResultStatus
     
     # Test scenario: create default results for known test commands
-    if command_id in ["sync-cmd-001", "async-cmd-001"]:
-        execution_mode = _determine_execution_mode_from_command_id(command_id)
-        
+    if command_id in ["sync-cmd-001", "async-cmd-001", "fast-cmd-001", "slow-cmd-001"]:
         result = result_manager.create_and_store_result(
             command_id=command_id,
             session_id=session_id,
             client_id="test-client",
-            execution_mode=execution_mode,
             execution_status=ExecutionResultStatus.COMPLETED,
             result_content="Test execution completed successfully"
         )
@@ -116,13 +101,10 @@ def _create_new_result(result_manager, result_request, session_id: str) -> dict:
     Returns:
         Dict: Creation confirmation response
     """
-    from public_tunnel.models.execution_result import CommandExecutionMode
-    
     result = result_manager.create_and_store_result(
         command_id=result_request.command_id,
         session_id=session_id,
         client_id="submitted-result",  # Will be updated with real client_id when integrated
-        execution_mode=CommandExecutionMode.ASYNC,  # Default for result submissions
         execution_status=result_request.execution_status,
         result_content=result_request.result_content,
         error_message=result_request.error_message
@@ -140,8 +122,8 @@ def _create_new_result(result_manager, result_request, session_id: str) -> dict:
 @router.get(
     "/api/sessions/{session_id}/results/{command_id}",
     response_model=UnifiedResultQueryResponse,
-    summary="Query unified result for both sync and async commands",
-    description="US-021: Returns execution results through same API regardless of command execution mode (sync/async). Provides consistent result management across all command types."
+    summary="Query unified result for all commands",
+    description="US-021: Returns execution results through same API regardless of execution time. Provides consistent result management across all command types with automatic timeout handling."
 )
 async def query_unified_command_result(
     session_id: str,
@@ -170,10 +152,7 @@ async def query_unified_command_result(
     Raises:
         HTTPException: 404 if command result not found
     """
-    from public_tunnel.models.execution_result import (
-        CommandExecutionMode, 
-        ExecutionResultStatus
-    )
+    from public_tunnel.models.execution_result import ExecutionResultStatus
     
     # GREEN Stage 2: Real implementation using result manager
     unified_response = result_manager.get_unified_response(command_id)

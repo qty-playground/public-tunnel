@@ -17,7 +17,7 @@ def execute(context):
     
     # Verify unified result structure fields
     unified_fields = [
-        "command_id", "execution_mode", "execution_status", 
+        "command_id", "execution_status", 
         "client_id", "session_id", "submitted_at"
     ]
     

@@ -13,12 +13,6 @@ if TYPE_CHECKING:
     from public_tunnel.models.file import ClientResultFileUploadRequest, ClientResultFileUploadResponse
 
 
-class CommandExecutionMode(str, Enum):
-    """指令執行模式列舉 - US-021 統一處理"""
-    SYNC = "sync"
-    ASYNC = "async"
-
-
 class ExecutionResultStatus(str, Enum):
     """執行結果狀態列舉"""
     PENDING = "pending"
@@ -30,7 +24,6 @@ class ExecutionResultStatus(str, Enum):
 class UnifiedResultQueryResponse(BaseModel):
     """US-021: 統一結果查詢回應模型"""
     command_id: str
-    execution_mode: CommandExecutionMode  # 區分是 sync 還是 async 模式
     execution_status: ExecutionResultStatus
     client_id: str
     session_id: str
@@ -56,12 +49,11 @@ class ExecutionResult:
     """執行結果資料結構 - 基於 OOA 設計"""
     
     def __init__(self, command_id: str, execution_status: ExecutionResultStatus, 
-                 client_id: str, session_id: str, execution_mode: CommandExecutionMode):
+                 client_id: str, session_id: str):
         self.command_id = command_id
         self.execution_status = execution_status
         self.client_id = client_id
         self.session_id = session_id
-        self.execution_mode = execution_mode
         self.submitted_at = datetime.now()
         self.started_at: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None
@@ -99,7 +91,6 @@ class ExecutionResult:
         """轉換為統一查詢回應格式 - US-021 核心功能"""
         return UnifiedResultQueryResponse(
             command_id=self.command_id,
-            execution_mode=self.execution_mode,
             execution_status=self.execution_status,
             client_id=self.client_id,
             session_id=self.session_id,
