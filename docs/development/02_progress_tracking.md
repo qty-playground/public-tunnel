@@ -16,7 +16,7 @@
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Completed | 100% | Week 6 |
 | Phase D: 進階功能 | US-004, US-008 | Not Started | 0% | Week 8 |
-| Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | In Progress | 25% | Week 10 |
+| Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | In Progress | 50% | Week 10 |
 
 ## 詳細功能狀態
 
@@ -284,12 +284,19 @@
   - 支援不存在命令的適當錯誤回應
 
 #### US-019: Session Command History Query
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-021
-- **阻塞**: 無（US-021 已完成）
-- **測試狀態**: 未建立
-- **最後更新**: 2025-08-24 (解除阻塞)
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 實作 `/api/sessions/{session_id}/commands/history` API 端點
+  - 建立 SessionCommandHistoryResponse 回應模型
+  - 擴展 ExecutionResultManager 支援依 session_id 查詢 command_id 列表
+  - AI assistant 可取得 session 內所有已執行命令的 ID 列表
+  - 整合統一結果查詢機制，支援查詢每個命令的詳細執行狀態
+  - 完整的 BDD 測試涵蓋已執行命令、空 session、查詢詳細資訊等場景
 
 #### 權限管理群組 (E2)
 #### US-001: Admin Session List Query
