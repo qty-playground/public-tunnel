@@ -16,7 +16,7 @@
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Completed | 100% | Week 6 |
 | Phase D: 進階功能 | US-004, US-008 | Not Started | 0% | Week 8 |
-| Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
+| Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | In Progress | 25% | Week 10 |
 
 ## 詳細功能狀態
 
@@ -269,12 +269,19 @@
 
 #### 查詢功能群組 (E1)
 #### US-018: Command Execution Status Query
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-021
-- **阻塞**: 無（US-021 已完成）
-- **測試狀態**: 未建立
-- **最後更新**: 2025-08-24 (解除阻塞)
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 實作 `/api/sessions/{session_id}/commands/{command_id}/status` API 端點
+  - 支援 pending、running、completed 三種執行狀態查詢
+  - 建立 CommandExecutionStatusResponse 回應模型
+  - 整合 ExecutionResultManager 和 CommandQueueManager 查詢命令狀態
+  - 完整的 BDD 測試涵蓋所有場景包括錯誤處理
+  - 支援不存在命令的適當錯誤回應
 
 #### US-019: Session Command History Query
 - **狀態**: Not Started
