@@ -16,7 +16,8 @@ from public_tunnel.dependencies.providers import (
     SessionRepositoryDep, 
     CommandValidatorDep,
     CommandQueueManagerDep,
-    ClientPresenceTrackerDep
+    ClientPresenceTrackerDep,
+    OfflineStatusManagerDep
 )
 
 router: APIRouter = APIRouter(tags=["targeted-command-submission"])
@@ -29,17 +30,20 @@ async def submit_command_to_target_client_in_session(
     session_repo: SessionRepositoryDep,
     command_validator: CommandValidatorDep,
     command_queue_manager: CommandQueueManagerDep,
-    client_presence_tracker: ClientPresenceTrackerDep
+    client_presence_tracker: ClientPresenceTrackerDep,
+    offline_status_manager: OfflineStatusManagerDep
 ) -> CommandSubmissionToTargetResponse:
     """
     Submit command to a specific target client within a session
     
     Core functionality for US-006: Targeted Client Command Submission  
     Enhanced with US-013: Non Existent Client Error Handling
+    Enhanced with US-014: Offline Client Command Rejection
     - Command is queued for specific target client only
     - Only the target client will receive this command during polling
     - FIFO queue management ensures fair command processing
     - Rejects commands targeting clients that have not registered via polling
+    - Rejects commands targeting offline clients to prevent command loss
     
     Args:
         session_id: The session identifier where the command will be submitted
@@ -48,12 +52,14 @@ async def submit_command_to_target_client_in_session(
         command_validator: Command validation service
         command_queue_manager: Command queue management service
         client_presence_tracker: Client presence tracking service
+        offline_status_manager: Offline status management service
         
     Returns:
         CommandSubmissionToTargetResponse: Command submission confirmation with details
         
     Raises:
         HTTPException: 404 Not Found when target client has not registered (US-013)
+        HTTPException: 422 Unprocessable Entity when target client is offline (US-014)
     """
     # US-013: Non Existent Client Error Handling
     # Check if target client has ever registered (via polling) in this session
@@ -70,7 +76,20 @@ async def submit_command_to_target_client_in_session(
                    f"Clients must perform at least one polling request before receiving commands."
         )
     
-    # US-006: Original implementation continues for registered clients
+    # US-014: Offline Client Command Rejection
+    # Check if target client is currently online and eligible for commands
+    if not offline_status_manager.is_client_eligible_for_commands(
+        client_id=command_request.target_client_id,
+        session_id=session_id
+    ):
+        # US-014: Client is offline - reject command submission to prevent command loss
+        raise HTTPException(
+            status_code=422,
+            detail=f"Cannot submit command to offline client '{command_request.target_client_id}'. "
+                   f"Client must be online to receive commands. Commands are rejected to prevent command loss."
+        )
+    
+    # US-006: Original implementation continues for registered and online clients
     # Submit command to target client's queue using queue manager
     command = command_queue_manager.submit_command_to_target_client(
         session_id=session_id,
