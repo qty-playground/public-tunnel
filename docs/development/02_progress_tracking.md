@@ -14,7 +14,7 @@
 |------|-------------|------|--------|----------|
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
-| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 29% | Week 6 |
+| Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | In Progress | 43% | Week 6 |
 | Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
 
@@ -134,12 +134,18 @@
   - 確保向後相容性，現有功能不受影響
 
 #### US-014: Offline Client Command Rejection
-- **狀態**: Not Started
-- **完成度**: 0%
+- **狀態**: Completed
+- **完成度**: 100%
 - **相依**: US-006, US-016
-- **阻塞**: 等待相依功能完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **阻塞**: 無
+- **測試狀態**: 完成並通過
+- **最後更新**: 2025-08-25 (實作完成)
+- **實作內容**:
+  - 整合 US-016 離線狀態管理機制至指令提交 API
+  - 實作離線 client 檢查邏輯，防止向離線 client 提交指令
+  - 新增 422 錯誤回應機制，當 client 離線時拒絕指令提交
+  - 建立完整的 BDD 測試覆蓋，驗證離線檢查與錯誤處理
+  - 確保指令僅提交給線上且可接收指令的 client
 
 #### US-015: Client Execution Error Reporting
 - **狀態**: Completed
