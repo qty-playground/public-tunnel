@@ -15,7 +15,7 @@
 | Phase A: 系統基石 | US-003, US-005, US-016 | Completed | 100% | Week 2 |
 | Phase B: 核心指令流程 | US-006, US-007, US-009, US-021 | Completed | 100% | Week 4 |
 | Phase C: 錯誤處理與檔案 | US-013, US-014, US-015, US-010, US-012, US-011, US-022 | Completed | 100% | Week 6 |
-| Phase D: 進階功能 | US-004, US-020, US-008 | Not Started | 0% | Week 8 |
+| Phase D: 進階功能 | US-004, US-008 | Not Started | 0% | Week 8 |
 | Phase E: 監控與管理 | US-018, US-019, US-001, US-002 | Not Started | 0% | Week 10 |
 
 ## 詳細功能狀態
@@ -236,21 +236,19 @@
 - **測試狀態**: 未建立
 - **最後更新**: -
 
-#### US-020: Sync Async Mode Selection
+#### ~~US-020: Sync Async Mode Selection~~ (廢棄)
+- **狀態**: 廢棄
+- **完成度**: N/A
+- **原因**: 系統不再支援主動選擇同步或非同步模式
+- **最後更新**: 2025-08-25 (標記為廢棄)
+
+#### US-008: Auto Async Response with Initial Wait
 - **狀態**: Not Started
 - **完成度**: 0%
 - **相依**: US-021
 - **阻塞**: 無（US-021 已完成）
 - **測試狀態**: 未建立
-- **最後更新**: 2025-08-24 (解除阻塞)
-
-#### US-008: Sync To Async Auto Switch
-- **狀態**: Not Started
-- **完成度**: 0%
-- **相依**: US-020, US-021
-- **阻塞**: 等待相依功能完成
-- **測試狀態**: 未建立
-- **最後更新**: -
+- **最後更新**: 2025-08-25 (移除對廢棄 US-020 的相依)
 
 ### Phase E: 監控與管理
 

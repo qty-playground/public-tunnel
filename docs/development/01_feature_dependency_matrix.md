@@ -30,8 +30,8 @@
 | ID | 名稱 | 核心職責 | 優先級 |
 |----|------|----------|--------|
 | US-004 | Specified Session Collaboration Mode | 指定 session 的協作模式 | P2 |
-| US-008 | Sync To Async Auto Switch | 同步自動切換非同步 | P2 |
-| US-020 | Sync Async Mode Selection | AI 選擇同步/非同步模式 | P2 |
+| US-008 | Auto Async Response with Initial Wait | 自動等待後轉非同步回應 | P2 |
+| ~~US-020~~ | ~~Sync Async Mode Selection~~ (廢棄) | ~~AI 選擇同步/非同步模式~~ | ~~P2~~ |
 
 ### 錯誤處理層 (Error Handling Layer)
 確保系統穩定性的錯誤處理機制：
@@ -124,7 +124,6 @@ graph TD
     US009 --> US021
     
     US021 --> US008
-    US021 --> US020
     US021 --> US018
     US021 --> US019
     
@@ -150,7 +149,7 @@ graph TD
 - US-009 → US-021: Client 執行後需要統一的結果查詢
 
 **P1 → P2 相依**：
-- US-021 → US-008: 統一結果機制後才能實作同步轉非同步
+- US-021 → US-008: 統一結果機制後才能實作自動等待轉非同步
 - US-006 → US-013/US-014: 指令提交後才需要錯誤處理
 
 **P2 → P3 相依**：
@@ -211,10 +210,9 @@ graph TD
 
 **開發順序**：
 1. **US-004**: Specified Session Collaboration Mode
-2. **US-020**: Sync Async Mode Selection
-3. **US-008**: Sync To Async Auto Switch
+2. **US-008**: Auto Async Response with Initial Wait
 
-**並行度**: US-004 可與 US-020 並行，US-008 依賴 US-020
+**並行度**: US-004 和 US-008 可並行開發
 
 ### Phase E: 監控與管理 (Week 9-10)
 **目標**：完善系統監控和權限管理
