@@ -193,6 +193,26 @@ def get_execution_result_manager():
     return get_execution_result_manager._instance
 
 
+def get_file_manager():
+    """Provide unified File Manager service
+    
+    Returns the same FileManager instance across all routers.
+    Can be easily overridden in conftest.py for testing.
+    
+    Returns:
+        FileManager: File management service instance
+        
+    Note: US-010 implementation - manages file upload, download, and session-based storage
+    """
+    from public_tunnel.services.file_manager import InMemoryFileManager
+    
+    # Global singleton instance for development/testing
+    if not hasattr(get_file_manager, '_instance'):
+        get_file_manager._instance = InMemoryFileManager()
+    
+    return get_file_manager._instance
+
+
 # Type aliases for cleaner router signatures
 SessionRepositoryDep = Annotated[object, Depends(get_session_repository)]
 CommandRepositoryDep = Annotated[object, Depends(get_command_repository)]
@@ -203,3 +223,4 @@ SessionManagerDep = Annotated[object, Depends(get_session_manager)]
 ClientPresenceTrackerDep = Annotated[object, Depends(get_client_presence_tracker)]
 OfflineStatusManagerDep = Annotated[object, Depends(get_offline_status_manager)]
 ExecutionResultManagerDep = Annotated[object, Depends(get_execution_result_manager)]
+FileManagerDep = Annotated[object, Depends(get_file_manager)]
