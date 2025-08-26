@@ -291,32 +291,40 @@
 
 ### 錯誤處理群組 (C1)
 
-### US-013: Non Existent Client Error Handling ⏳
+### US-013: Non Existent Client Error Handling ✅
 **需求描述**: 處理不存在 client 的錯誤情況
 **驗收項目**:
-- [ ] **Requirements 符合度**
-  - [ ] 正確偵測不存在的 client
-  - [ ] 404 錯誤回應格式正確
-  - [ ] 錯誤訊息清楚明確
-  - [ ] 不影響正常 client 的操作
+- [x] **Requirements 符合度**
+  - [x] 正確偵測不存在的 client
+  - [x] 404 錯誤回應格式正確
+  - [x] 錯誤訊息清楚明確
+  - [x] 不影響正常 client 的操作
 
-- [ ] **Test Code 純度**
-  - [ ] BDD scenarios 專注錯誤行為驗證
-  - [ ] 測試不直接修改 client 註冊狀態
-  - [ ] 使用 API 呼叫測試錯誤處理
-  - [ ] 無測試程式碼實作錯誤檢查邏輯
+- [x] **Test Code 純度**
+  - [x] BDD scenarios 專注錯誤行為驗證
+  - [x] 測試不直接修改 client 註冊狀態
+  - [x] 使用 API 呼叫測試錯誤處理
+  - [x] 無測試程式碼實作錯誤檢查邏輯
 
-- [ ] **Production Code 完整性**
-  - [ ] NonExistentClientErrorResponse 模型完整
-  - [ ] Client 存在性檢查邏輯完整
-  - [ ] 錯誤回應機制正確實作
-  - [ ] 向後相容性確保
+- [x] **Production Code 完整性**
+  - [x] NonExistentClientErrorResponse 模型完整
+  - [x] Client 存在性檢查邏輯完整
+  - [x] 錯誤回應機制正確實作
+  - [x] 向後相容性確保
+
+**驗收結果**: ✅ **驗收通過**
+- 不存在 client 錯誤處理正常運作：404 狀態碼，清晰錯誤訊息
+- BDD 測試通過：`test_reject_command_targeting_nonexistent_client`
+- 透過 `ClientPresenceTracker` 檢查 client 是否曾經註冊
+- 錯誤訊息包含具體 client ID 和註冊要求說明
+- 指令不會被排入不存在 client 的佇列中
+- 整合在指令提交流程中，不影響正常 client 操作
 
 **驗收參考資料**:
 - **需求定義**: `docs/requirements/02_user_story.md` → US-013 段落
 - **BDD 測試**: `tests/features/us013_non_existent_client_error_handling/`
 - **Production Code**: 
-  - `public_tunnel/models/errors.py`
+  - `public_tunnel/models/command.py` (NonExistentClientErrorResponse)
   - `public_tunnel/routers/submit_commands_to_target_clients.py` (enhanced)
 
 ---
@@ -725,9 +733,9 @@
 - **建立日期**: 2025-08-25
 - **更新日期**: 2025-08-26
 - **總 User Stories**: 21 個 (US-017 deprecated)
-- **驗收狀態**: Phase A-B 部分驗收完成 ✅
-  - **已驗收**: 7 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021) 
-  - **待驗收**: 14 個 (其餘 Phase B-E User Stories)
+- **驗收狀態**: Phase A-B-C 部分驗收完成 ✅
+  - **已驗收**: 8 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021, US-013) 
+  - **待驗收**: 13 個 (其餘 Phase B-E User Stories)
 - **下一步**: 繼續執行 Phase B-E 的其他 User Story 驗收
 
 ## 驗收總結 (Phase A)
@@ -763,6 +771,11 @@
 7. **US-021: Unified Result Query Mechanism** ✅
    - 統一結果查詢 API 支援不同執行時間的指令
    - Command-id 索引機制和一致性結果格式完整實作
+
+#### Phase C: 錯誤處理與檔案管理
+8. **US-013: Non Existent Client Error Handling** ✅
+   - 不存在 client 錯誤處理機制完整實作
+   - 404 錯誤回應和清晰錯誤訊息，指令不會被誤加入佇列
 
 ### 驗收品質保證:
 - 所有 BDD 測試均通過
