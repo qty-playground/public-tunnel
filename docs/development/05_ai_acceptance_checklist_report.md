@@ -329,31 +329,40 @@
 
 ---
 
-### US-014: Offline Client Command Rejection ⏳
+### US-014: Offline Client Command Rejection ✅
 **需求描述**: 拒絕向離線 client 提交指令
 **驗收項目**:
-- [ ] **Requirements 符合度**
-  - [ ] 正確整合離線狀態檢查
-  - [ ] 422 錯誤回應當 client 離線
-  - [ ] 離線檢查邏輯準確
-  - [ ] 只向線上 client 提交指令
+- [x] **Requirements 符合度**
+  - [x] 正確整合離線狀態檢查
+  - [x] 422 錯誤回應當 client 離線
+  - [x] 離線檢查邏輯準確
+  - [x] 只向線上 client 提交指令
 
-- [ ] **Test Code 純度**
-  - [ ] BDD 測試驗證離線拒絕行為
-  - [ ] 測試使用時間 mock 控制離線狀態
-  - [ ] 無測試程式碼直接設定 client 狀態
-  - [ ] 透過 API 行為驗證離線檢查
+- [x] **Test Code 純度**
+  - [x] BDD 測試驗證離線拒絕行為
+  - [x] 測試使用時間 mock 控制離線狀態
+  - [x] 無測試程式碼直接設定 client 狀態
+  - [x] 透過 API 行為驗證離線檢查
 
-- [ ] **Production Code 完整性**
-  - [ ] 離線狀態檢查整合完整
-  - [ ] 422 錯誤回應機制實作
-  - [ ] 與 presence tracking 正確整合
-  - [ ] 指令提交邏輯更新完整
+- [x] **Production Code 完整性**
+  - [x] 離線狀態檢查整合完整
+  - [x] 422 錯誤回應機制實作
+  - [x] 與 presence tracking 正確整合
+  - [x] 指令提交邏輯更新完整
+
+**驗收結果**: ✅ **驗收通過**
+- 離線 client 指令拒絕機制正常運作：422 狀態碼，防止指令遺失
+- BDD 測試通過：`test_reject_command_targeting_offline_client`
+- `OfflineStatusManager.is_client_eligible_for_commands` 正確判定 client 資格
+- 錯誤訊息清楚說明離線狀態和指令防遺失原因
+- 指令不會被排入離線 client 的佇列中
+- 與 US-013 (不存在 client) 錯誤處理協同運作
 
 **驗收參考資料**:
 - **需求定義**: `docs/requirements/02_user_story.md` → US-014 段落
 - **BDD 測試**: `tests/features/us014_offline_client_command_rejection/`
 - **Production Code**: 
+  - `public_tunnel/services/offline_status_manager.py`
   - `public_tunnel/routers/submit_commands_to_target_clients.py` (enhanced)
 
 ---
@@ -734,8 +743,8 @@
 - **更新日期**: 2025-08-26
 - **總 User Stories**: 21 個 (US-017 deprecated)
 - **驗收狀態**: Phase A-B-C 部分驗收完成 ✅
-  - **已驗收**: 8 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021, US-013) 
-  - **待驗收**: 13 個 (其餘 Phase B-E User Stories)
+  - **已驗收**: 9 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021, US-013, US-014) 
+  - **待驗收**: 12 個 (其餘 Phase B-E User Stories)
 - **下一步**: 繼續執行 Phase B-E 的其他 User Story 驗收
 
 ## 驗收總結 (Phase A)
@@ -776,6 +785,10 @@
 8. **US-013: Non Existent Client Error Handling** ✅
    - 不存在 client 錯誤處理機制完整實作
    - 404 錯誤回應和清晰錯誤訊息，指令不會被誤加入佇列
+
+9. **US-014: Offline Client Command Rejection** ✅
+   - 離線 client 指令拒絕機制完整實作
+   - 422 錯誤回應和指令防遺失保護機制
 
 ### 驗收品質保證:
 - 所有 BDD 測試均通過
