@@ -248,33 +248,42 @@
 
 ---
 
-### US-021: Unified Result Query Mechanism ⏳
+### US-021: Unified Result Query Mechanism ✅
 **需求描述**: 統一結果查詢機制，支援 sync 和 async 指令結果
 **驗收項目**:
-- [ ] **Requirements 符合度**
-  - [ ] 統一的結果查詢 API，不分 sync/async
-  - [ ] command-id 索引機制正確實作
-  - [ ] 結果儲存和檢索機制完整
-  - [ ] 一致的回應格式設計
+- [x] **Requirements 符合度**
+  - [x] 統一的結果查詢 API，不分 sync/async
+  - [x] command-id 索引機制正確實作
+  - [x] 結果儲存和檢索機制完整
+  - [x] 一致的回應格式設計
 
-- [ ] **Test Code 純度**
-  - [ ] BDD 測試驗證統一查詢行為，不依賴儲存實作
-  - [ ] 測試涵蓋各種結果類型，但不涉及內部資料結構
-  - [ ] 使用 command-id 驗證結果，不直接存取儲存層
-  - [ ] 無測試程式碼實作結果管理邏輯
+- [x] **Test Code 純度**
+  - [x] BDD 測試驗證統一查詢行為，不依賴儲存實作
+  - [x] 測試涵蓋各種結果類型，但不涉及內部資料結構
+  - [x] 使用 command-id 驗證結果，不直接存取儲存層
+  - [x] 無測試程式碼實作結果管理邏輯
 
-- [ ] **Production Code 完整性**
-  - [ ] ExecutionResultManager 完整實作
-  - [ ] UnifiedResultQueryResponse 模型完整
-  - [ ] 指令ID索引機制正確實作
-  - [ ] API 端點與現有架構整合
+- [x] **Production Code 完整性**
+  - [x] ExecutionResultManager 完整實作
+  - [x] UnifiedResultQueryResponse 模型完整
+  - [x] 指令ID索引機制正確實作
+  - [x] API 端點與現有架構整合
+
+**驗收結果**: ✅ **驗收通過**
+- 統一結果查詢 API 正常運作：`GET /api/sessions/{session_id}/results/{command_id}`
+- BDD 測試通過：`test_all_command_results_are_stored_with_commandid_indexing`
+- 不論快速或慢速指令都使用相同的 API 格式和端點
+- `InMemoryExecutionResultManager` 完整實作 command-id 索引機制
+- `UnifiedResultQueryResponse` 模型提供一致的結果格式
+- API 支援結果提交和查詢的完整週期
 
 **驗收參考資料**:
 - **需求定義**: `docs/requirements/02_user_story.md` → US-021 段落
 - **BDD 測試**: `tests/features/us021_unified_result_query_mechanism/`
 - **Production Code**: 
   - `public_tunnel/services/execution_result_manager.py`
-  - `public_tunnel/models/unified_result.py`
+  - `public_tunnel/models/execution_result.py`
+  - `public_tunnel/routers/unified_result_query_mechanism.py`
 
 ---
 
@@ -717,8 +726,8 @@
 - **更新日期**: 2025-08-26
 - **總 User Stories**: 21 個 (US-017 deprecated)
 - **驗收狀態**: Phase A-B 部分驗收完成 ✅
-  - **已驗收**: 6 個 (US-003, US-005, US-016, US-006, US-007, US-009) 
-  - **待驗收**: 15 個 (其餘 Phase B-E User Stories)
+  - **已驗收**: 7 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021) 
+  - **待驗收**: 14 個 (其餘 Phase B-E User Stories)
 - **下一步**: 繼續執行 Phase B-E 的其他 User Story 驗收
 
 ## 驗收總結 (Phase A)
@@ -750,6 +759,10 @@
 6. **US-009: Client Single Command Retrieval** ✅
    - Client-focused 單指令接收 API 正常運作
    - 提供執行節奏控制機制 (has_more_commands, queue_size)
+
+7. **US-021: Unified Result Query Mechanism** ✅
+   - 統一結果查詢 API 支援不同執行時間的指令
+   - Command-id 索引機制和一致性結果格式完整實作
 
 ### 驗收品質保證:
 - 所有 BDD 測試均通過
