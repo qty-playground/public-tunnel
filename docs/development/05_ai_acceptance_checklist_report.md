@@ -367,32 +367,41 @@
 
 ---
 
-### US-015: Client Execution Error Reporting ⏳
+### US-015: Client Execution Error Reporting ✅
 **需求描述**: Client 執行錯誤回報機制
 **驗收項目**:
-- [ ] **Requirements 符合度**
-  - [ ] 錯誤回報 API 端點完整實作
-  - [ ] 錯誤結果格式與成功結果一致
-  - [ ] 統一錯誤結果查詢機制
-  - [ ] AI 可一致處理成功與錯誤結果
+- [x] **Requirements 符合度**
+  - [x] 錯誤回報 API 端點完整實作
+  - [x] 錯誤結果格式與成功結果一致
+  - [x] 統一錯誤結果查詢機制
+  - [x] AI 可一致處理成功與錯誤結果
 
-- [ ] **Test Code 純度**
-  - [ ] BDD 測試驗證錯誤回報流程
-  - [ ] 測試不實作錯誤處理邏輯
-  - [ ] 使用 API 驗證錯誤結果格式
-  - [ ] 無測試程式碼承擔結果管理責任
+- [x] **Test Code 純度**
+  - [x] BDD 測試驗證錯誤回報流程
+  - [x] 測試不實作錯誤處理邏輯
+  - [x] 使用 API 驗證錯誤結果格式
+  - [x] 無測試程式碼承擔結果管理責任
 
-- [ ] **Production Code 完整性**
-  - [ ] 錯誤回報 API 端點完整實作
-  - [ ] 統一結果查詢整合完整
-  - [ ] 錯誤結果索引機制實作
-  - [ ] 與現有結果管理系統整合
+- [x] **Production Code 完整性**
+  - [x] 錯誤回報 API 端點完整實作
+  - [x] 統一結果查詢整合完整
+  - [x] 錯誤結果索引機制實作
+  - [x] 與現有結果管理系統整合
+
+**驗收結果**: ✅ **驗收通過**
+- Client 錯誤回報機制正常運作：`POST /api/sessions/{session_id}/commands/{command_id}/error`
+- 錯誤查詢機制正常運作：`GET /api/sessions/{session_id}/commands/{command_id}/error`
+- BDD 測試通過：`test_client_reports_command_execution_failure`
+- 錯誤結果使用與成功結果相同的統一格式 (`UnifiedResultQueryResponse`)
+- AI 可透過相同 API 查詢錯誤和成功結果，實現一致性處理
+- 錯誤結果正確儲存 error_message，result_content 為 null
+- 與 US-021 統一結果查詢機制完全整合
 
 **驗收參考資料**:
 - **需求定義**: `docs/requirements/02_user_story.md` → US-015 段落
 - **BDD 測試**: `tests/features/us015_client_execution_error_reporting/`
 - **Production Code**: 
-  - `public_tunnel/routers/client_error_reporting.py`
+  - `public_tunnel/routers/client_execution_error_reporting.py`
   - `public_tunnel/services/execution_result_manager.py` (enhanced)
 
 ---
@@ -743,8 +752,8 @@
 - **更新日期**: 2025-08-26
 - **總 User Stories**: 21 個 (US-017 deprecated)
 - **驗收狀態**: Phase A-B-C 部分驗收完成 ✅
-  - **已驗收**: 9 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021, US-013, US-014) 
-  - **待驗收**: 12 個 (其餘 Phase B-E User Stories)
+  - **已驗收**: 10 個 (US-003, US-005, US-016, US-006, US-007, US-009, US-021, US-013, US-014, US-015) 
+  - **待驗收**: 11 個 (其餘 Phase B-E User Stories)
 - **下一步**: 繼續執行 Phase B-E 的其他 User Story 驗收
 
 ## 驗收總結 (Phase A)
@@ -789,6 +798,10 @@
 9. **US-014: Offline Client Command Rejection** ✅
    - 離線 client 指令拒絕機制完整實作
    - 422 錯誤回應和指令防遺失保護機制
+
+10. **US-015: Client Execution Error Reporting** ✅
+    - Client 錯誤回報機制與成功結果使用統一格式
+    - AI 可透過相同 API 一致性處理錯誤和成功結果
 
 ### 驗收品質保證:
 - 所有 BDD 測試均通過
