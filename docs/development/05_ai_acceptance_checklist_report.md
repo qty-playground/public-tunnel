@@ -211,33 +211,40 @@
 
 ---
 
-### US-009: Client Single Command Retrieval ⏳
+### US-009: Client Single Command Retrieval ✅
 **需求描述**: Client-focused 單一指令接收機制
 **驗收項目**:
-- [ ] **Requirements 符合度**
-  - [ ] 每次 polling 只返回一個指令
-  - [ ] 指令從佇列移除避免重複
-  - [ ] 提供 `has_more_commands` 和 `queue_size` 資訊
-  - [ ] API 端點正確實作並符合規格
+- [x] **Requirements 符合度**
+  - [x] 每次 polling 只返回一個指令
+  - [x] 指令從佇列移除避免重複
+  - [x] 提供 `has_more_commands` 和 `queue_size` 資訊
+  - [x] API 端點正確實作並符合規格
 
-- [ ] **Test Code 純度**
-  - [ ] BDD scenarios 驗證單指令行為，不涉及實作細節
-  - [ ] 測試從 client 角度驗證行為，不直接操作伺服器狀態
-  - [ ] Queue 狀態驗證透過 API 回應，不直接檢查內部狀態
-  - [ ] 無測試程式碼承擔佇列管理邏輯
+- [x] **Test Code 純度**
+  - [x] BDD scenarios 驗證單指令行為，不涉及實作細節
+  - [x] 測試從 client 角度驗證行為，不直接操作伺服器狀態
+  - [x] Queue 狀態驗證透過 API 回應，不直接檢查內部狀態
+  - [x] 無測試程式碼承擔佇列管理邏輯
 
-- [ ] **Production Code 完整性**
-  - [ ] 單指令返回邏輯完整實作
-  - [ ] ClientCommandRetrievalResponse 模型完整
-  - [ ] 佇列狀態資訊提供機制完整
-  - [ ] API 端點與服務層正確整合
+- [x] **Production Code 完整性**
+  - [x] 單指令返回邏輯完整實作
+  - [x] ClientCommandRetrievalResponse 模型完整
+  - [x] 佇列狀態資訊提供機制完整
+  - [x] API 端點與服務層正確整合
+
+**驗收結果**: ✅ **驗收通過**
+- 單指令接收 API 正常運作：`GET /api/sessions/{session_id}/clients/{client_id}/command`
+- BDD 測試通過：`test_client_receives_exactly_one_command_per_polling_request`
+- API 正確回應單一指令並從佇列移除，提供 `has_more_commands` 和 `queue_size`
+- `get_next_command_with_queue_info` 方法完整實作並整合到 API 端點
+- Client 可透過 queue 資訊控制執行節奏
 
 **驗收參考資料**:
 - **需求定義**: `docs/requirements/02_user_story.md` → US-009 段落
 - **BDD 測試**: `tests/features/us009_client_single_command_retrieval/`
 - **Production Code**: 
-  - `public_tunnel/models/client_command.py`
-  - `public_tunnel/routers/client_single_command.py`
+  - `public_tunnel/models/command.py`
+  - `public_tunnel/routers/client_single_command_retrieval.py`
 
 ---
 
@@ -709,9 +716,9 @@
 - **建立日期**: 2025-08-25
 - **更新日期**: 2025-08-26
 - **總 User Stories**: 21 個 (US-017 deprecated)
-- **驗收狀態**: Phase A 核心系統已完成驗收 ✅
-  - **已驗收**: 5 個 (US-003, US-005, US-016, US-006, US-007) 
-  - **待驗收**: 16 個 (其餘 Phase B-E User Stories)
+- **驗收狀態**: Phase A-B 部分驗收完成 ✅
+  - **已驗收**: 6 個 (US-003, US-005, US-016, US-006, US-007, US-009) 
+  - **待驗收**: 15 個 (其餘 Phase B-E User Stories)
 - **下一步**: 繼續執行 Phase B-E 的其他 User Story 驗收
 
 ## 驗收總結 (Phase A)
@@ -739,6 +746,10 @@
 5. **US-007: Command FIFO Queue Management** ✅
    - FIFO 佇列管理完全正確
    - 每次 polling 只返回一個指令，順序保證
+
+6. **US-009: Client Single Command Retrieval** ✅
+   - Client-focused 單指令接收 API 正常運作
+   - 提供執行節奏控制機制 (has_more_commands, queue_size)
 
 ### 驗收品質保證:
 - 所有 BDD 測試均通過
