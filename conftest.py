@@ -46,6 +46,35 @@ class ScenarioContext:
         """Get shared test client for this scenario"""
         return self._test_client
     
+    def register_client(self, client_id: str, session_id: str = "default") -> None:
+        """
+        Register a client by sending polling request (common pattern for many tests)
+        
+        This helper function encapsulates the common pattern of client registration
+        that's needed in most BDD tests. It should only be called during GIVEN phase.
+        
+        Args:
+            client_id: The client ID to register
+            session_id: The session ID to register in (defaults to "default")
+            
+        Raises:
+            AssertionError: If client registration fails
+            AttributeError: If called outside GIVEN phase
+        """
+        if self._phase != BDDPhase.GIVEN:
+            raise AttributeError("register_client() can only be called during GIVEN phase")
+        
+        # Register client through polling API (proper external API usage)
+        poll_response = self.test_client.get(
+            f"/api/sessions/{session_id}/poll",
+            params={"client_id": client_id}
+        )
+        
+        assert poll_response.status_code == 200, (
+            f"Client registration failed for {client_id} in session {session_id}: "
+            f"HTTP {poll_response.status_code}"
+        )
+    
     @property
     def phase(self) -> BDDPhase:
         """Get current BDD phase"""
