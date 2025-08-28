@@ -40,6 +40,12 @@
   * ✅ 呼叫服務層方法檢查內部狀態
   * ❌ 發送 POST 請求執行額外的業務邏輯
   * ❌ 重複執行 When 步驟中的相同動作
+- 精確驗證原則：
+  * ✅ 驗證確切的錯誤訊息：`assert detail == "Client 'abc' not found"`
+  * ✅ 檢查具體的物件內容：`assert command.content == "expected_command"`
+  * ✅ 驗證完整的狀態變化：`assert queue_size == 2 and next_command.id == expected_id`
+  * ❌ 模糊的關鍵字檢查：`assert any(keyword in message for keyword in keywords)`
+  * ❌ 只檢查數量不檢查內容：`assert len(results) == 3` (沒檢查 results 內容)
 
 ## TDD 循環流程
 

@@ -12,15 +12,11 @@ def execute(context):
     response_data = context.response.json()
     assert "detail" in response_data, "Error response should contain detail message"
     
-    # 確認錯誤訊息包含 client 不存在或未註冊的資訊
+    # 驗證確切的錯誤訊息格式（精確比對，不使用模糊檢查）
     error_detail = response_data["detail"]
-    client_not_available_keywords = [
-        "not found", "does not exist", "not registered", "has not registered"
-    ]
+    expected_error = f"Client '{context.non_existent_client_id}' has not registered in session '{context.session_id}'. Clients must perform at least one polling request before receiving commands."
     
-    assert any(keyword in error_detail.lower() for keyword in client_not_available_keywords), (
-        f"Error should mention client is not available (not found/not registered), got: {error_detail}"
-    )
-    assert context.non_existent_client_id in error_detail, (
-        f"Error should mention the specific client ID '{context.non_existent_client_id}', got: {error_detail}"
+    assert error_detail == expected_error, (
+        f"Error message should be exactly: '{expected_error}'\n"
+        f"But got: '{error_detail}'"
     )

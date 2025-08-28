@@ -87,6 +87,11 @@ def execute(context):
     - 可以驗證回應內容和格式
     - 可以使用只讀 API (GET) 進行狀態驗證
     - 禁止執行會改變系統狀態的操作 (POST/PUT/DELETE)
+    - 必須使用精確驗證，禁止模糊檢查：
+      * ✅ 驗證確切的錯誤訊息內容
+      * ✅ 檢查具體的物件屬性值
+      * ❌ 使用 any() 檢查多種可能的文字
+      * ❌ 只檢查數量不檢查內容
     """
     # TODO: implement the actual step logic
     # 注意：根據需求調整函數簽名：
