@@ -33,6 +33,3 @@ def execute(context):
         )
         context.test_commands.append(command)
     
-    # Verify that commands were queued successfully
-    queue_size = queue_manager.get_queue_size_for_client(context.test_session_id, context.test_client_id)
-    assert queue_size == 3, f"Expected 3 commands in queue, got {queue_size}"

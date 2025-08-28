@@ -70,6 +70,24 @@ Feature: [從 User Story 提取的 Feature 名稱]
 #### Individual Step 實作檔案 (例如 `given_client_is_registered.py`)
 ```python
 def execute(context):
+    """
+    Given steps: 設定測試前置條件和環境狀態
+    - 只做資料準備和環境設定
+    - 不執行業務動作
+    - 不做任何斷言或驗證
+    
+    When steps: 執行單一業務動作
+    - 只執行一個明確的動作
+    - 不做驗證或狀態檢查
+    - 可以儲存執行結果供 Then 使用
+    
+    Then steps: 驗證結果和狀態
+    - 專門負責所有的斷言和驗證
+    - 可以檢查系統狀態變化
+    - 可以驗證回應內容和格式
+    - 可以使用只讀 API (GET) 進行狀態驗證
+    - 禁止執行會改變系統狀態的操作 (POST/PUT/DELETE)
+    """
     # TODO: implement the actual step logic
     # 注意：根據需求調整函數簽名：
     # 1. 如果 step 有參數傳入：execute(context, param1, param2)
@@ -108,14 +126,35 @@ pytest tests/features/ --collect-only
 ```
 
 ## 重要注意事項
-1. 基礎結構：確保 `tests/__init__.py` 和 `tests/features/__init__.py` 存在
-2. pytest 配置：確保 `pytest.ini` 的 `python_files` 包含 `steps.py`
-3. scenarios 載入：必須在 `steps.py` 中加入 `scenarios('story.feature')` 
-4. 標記：所有新建立的 scenario 必須標記 `@skip`
-5. 實作骨架：所有 step 實作都使用 `NotImplementedError`
-6. 命名規範：檔案名稱必須符合 Python module 命名規範
-7. 職責分離：`steps.py` 只負責註冊，實際邏輯在獨立的 step 檔案中
-8. 函數簽名：每個 step 實作檔案都有基本的 `execute(context)` 函數，根據 step 參數或實作需求自行調整簽名
+
+### BDD 職責分離原則
+1. **Given steps (前置條件)**：
+   - 只設定測試環境和資料
+   - 不執行業務動作
+   - 不做任何驗證或斷言
+   - 範例：建立測試資料、設定系統狀態
+
+2. **When steps (執行動作)**：
+   - 只執行一個明確的業務動作
+   - 不做驗證或狀態檢查
+   - 可以儲存執行結果到 context
+   - 範例：發送 API 請求、呼叫業務方法
+
+3. **Then steps (驗證結果)**：
+   - 專門負責所有驗證和斷言
+   - 可以檢查系統狀態變化
+   - 可以檢查回應格式和內容
+   - 範例：檢查 API 回應、驗證資料庫狀態
+
+### 技術注意事項
+4. 基礎結構：確保 `tests/__init__.py` 和 `tests/features/__init__.py` 存在
+5. pytest 配置：確保 `pytest.ini` 的 `python_files` 包含 `steps.py`
+6. scenarios 載入：必須在 `steps.py` 中加入 `scenarios('story.feature')` 
+7. 標記：所有新建立的 scenario 必須標記 `@skip`
+8. 實作骨架：所有 step 實作都使用 `NotImplementedError`
+9. 命名規範：檔案名稱必須符合 Python module 命名規範
+10. 職責分離：`steps.py` 只負責註冊，實際邏輯在獨立的 step 檔案中
+11. 函數簽名：每個 step 實作檔案都有基本的 `execute(context)` 函數，根據 step 參數或實作需求自行調整簽名
 
 ## 成功標準
 完成後應該達到：

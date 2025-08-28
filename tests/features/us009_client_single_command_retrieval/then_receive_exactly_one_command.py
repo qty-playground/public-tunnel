@@ -41,8 +41,10 @@ def execute(context):
     assert "queue_size" in context.response_data, \
         "Expected queue_size field in response"
     
-    # Should indicate more commands remain (we started with 3, got 1)
+    # Verify we received exactly one command (the first one in FIFO order)
+    # Since we queued 3 commands ["echo 'first command'", "ls -la", "pwd"]
+    # We should get the first one: "echo 'first command'"
     assert context.response_data["has_more_commands"] == True, \
-        "Expected has_more_commands to be True since we had 3 commands initially"
+        "Expected has_more_commands to be True since 2 commands should remain"
     assert context.response_data["queue_size"] == 2, \
-        f"Expected queue_size to be 2, got {context.response_data['queue_size']}"
+        f"Expected queue_size to be 2 (started with 3, got 1), got {context.response_data['queue_size']}"
