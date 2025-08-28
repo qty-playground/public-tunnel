@@ -1,0 +1,229 @@
+# Human Acceptance Review 人工驗收專用提示詞
+
+## 目的
+對已實作的 User Stories 進行系統性的人工驗收，確保 BDD 測試設計符合最新標準並且功能正確運作。
+
+## 驗收流程
+
+### Step 1: 選定 Feature
+從人工驗收清單中選擇一個 User Story：
+```bash
+# 檢視待驗收清單
+cat docs/qa/05_human_acceptance_checklist.md
+```
+
+優先順序：
+1. **測試已通過**且**待人工驗收**的 User Stories
+2. **核心功能**優先於邊緣功能
+3. **依賴完成**的功能（基礎功能先驗收）
+
+### Step 2: BDD 測試品質驗證
+
+#### 2.1 檢查測試檔案結構
+```bash
+# 檢視測試目錄結構
+ls tests/features/us{story_number}_*/
+```
+
+確認包含：
+- [ ] `story.feature` - Gherkin scenario
+- [ ] `steps.py` - Step 註冊
+- [ ] `given_*.py` - Given steps 實作
+- [ ] `when_*.py` - When steps 實作  
+- [ ] `then_*.py` - Then steps 實作
+
+#### 2.2 Given Steps 責任分離檢查
+
+**✅ 正確的 Given Steps**：
+- 建立真實的系統狀態
+- 使用外部 API 或 context helpers
+- 不做任何驗證或斷言
+- 不造假資料或 ID
+
+**❌ 錯誤的 Given Steps**：
+- 只設定變數而不建立實際狀態
+- 直接操作 service layer（違反外部優先原則）
+- 造假 ID 或不存在的資料
+- 包含驗證邏輯
+
+**檢查重點**：
+```python
+# 好的範例
+context.register_client(client_id, session_id)
+response = context.test_client.post("/api/...", json={...})
+context.command_id = response.json()["command_id"]
+
+# 壞的範例  
+context.command_id = "fake-cmd-001"  # 造假資料
+get_service().update_state(...)      # 直接操作 service
+assert context.data == expected      # Given 中有驗證
+```
+
+#### 2.3 When Steps 責任分離檢查
+
+**✅ 正確的 When Steps**：
+- 只執行一個明確的業務動作
+- 不做驗證或狀態檢查
+- 儲存執行結果到 context
+- 使用外部 API（HTTP 請求）
+
+**❌ 錯誤的 When Steps**：
+- 包含驗證邏輯或斷言
+- 執行多個業務動作
+- 直接操作內部 service
+- 檢查系統狀態
+
+#### 2.4 Then Steps 責任分離檢查
+
+**✅ 正確的 Then Steps**：
+- 專門負責所有驗證和斷言
+- 使用精確驗證（不模糊檢查）
+- 可以使用只讀 API (GET) 驗證狀態
+- 檢查具體內容而非只檢查數量
+
+**❌ 錯誤的 Then Steps**：
+- 執行會改變狀態的操作
+- 使用模糊檢查（any(), 關鍵字陣列等）
+- 只檢查數量不檢查內容
+- 重複執行業務邏輯
+
+**精確驗證範例**：
+```python
+# ✅ 精確驗證
+assert response_data["detail"] == f"Client '{client_id}' not found"
+assert command.content == "expected_command"
+
+# ❌ 模糊驗證
+assert any(keyword in message for keyword in keywords)
+assert len(results) == 3  # 沒檢查內容
+```
+
+### Step 3: 使用者視角分析
+
+#### 3.1 判斷是否需要 Client Registration
+檢查 User Story 是否涉及：
+- Client 接收指令
+- Client 回報結果  
+- Client 在線狀態
+- Session 內的 client 操作
+
+如果是，則應該使用 `context.register_client()`
+
+#### 3.2 檢查 Client Registration 實作
+```python
+# ✅ 正確使用
+context.register_client(client_id, session_id)
+
+# ❌ 錯誤做法
+from public_tunnel.dependencies.providers import get_client_presence_tracker
+tracker = get_client_presence_tracker()
+tracker.update_client_last_seen(...)  # 直接操作 service
+```
+
+#### 3.3 Session 策略檢查
+- [ ] 使用 `session_id = "default"`（系統限制）
+- [ ] 不使用自訂 session ID
+- [ ] API 呼叫格式正確：`/api/sessions/{session_id}/...`
+
+### Step 4: 功能驗收測試
+
+#### 4.1 執行 BDD 測試
+```bash
+# 執行特定 User Story 測試
+pytest tests/features/us{number}_*/ -v
+
+# 檢查測試通過狀態
+echo "測試結果: $?"
+```
+
+#### 4.2 手動 API 測試
+根據 User Story 需求，手動驗證關鍵 API 端點：
+```bash
+# 使用 Python 腳本測試 API
+python3 -c "
+from public_tunnel.main import app
+from fastapi.testclient import TestClient
+client = TestClient(app)
+# ... 手動 API 測試
+"
+```
+
+#### 4.3 邊界條件測試
+- [ ] 錯誤情況處理正確
+- [ ] 邊界值測試通過
+- [ ] 異常狀況回應合理
+
+### Step 5: 驗收決定和記錄
+
+#### 5.1 更新驗收狀態
+如果驗收通過，更新 `docs/qa/05_human_acceptance_checklist.md`：
+
+```markdown
+### [x] US-XXX: Feature Name
+**需求**: Feature description
+**AI 檢查狀態**: ✅ 已通過  
+**人工驗收**: ✅ 已通過
+
+**驗收紀錄**:
+- **BDD 測試品質**: Given/When/Then 職責分離正確 ✅
+- **測試數據真實性**: 無造假資料，使用真實系統狀態 ✅  
+- **API 正確性**: 功能符合需求規格 ✅
+- **使用者視角**: 適當使用 context.register_client() ✅
+- **精確驗證**: 無模糊檢查，驗證具體內容 ✅
+- **驗收者**: Claude
+- **檢查日期**: {current_date}
+```
+
+#### 5.2 問題記錄
+如果發現問題：
+```markdown
+**發現問題**: 
+- BDD 設計問題：[具體描述]
+- 功能問題：[具體描述]
+
+**影響範圍**: [影響的功能或模組]
+**修正建議**: [建議的修正方向]
+**驗收狀態**: ❌ 需要修正
+```
+
+### Step 6: 修正和重新驗收
+
+如果發現問題：
+1. **修正 BDD 測試設計問題**
+2. **修正功能實作問題**  
+3. **重新執行測試**
+4. **重新進行人工驗收**
+
+## 驗收檢查清單
+
+每個 User Story 驗收時必須確認：
+
+### BDD 測試品質 ✅
+- [ ] Given: 建立真實狀態，使用外部 API，無驗證邏輯
+- [ ] When: 只執行動作，無驗證，儲存結果
+- [ ] Then: 專門驗證，精確檢查，可用只讀 API
+
+### 資料狀態原則 ✅  
+- [ ] 無造假資料或 ID
+- [ ] 使用真實系統功能建立狀態
+- [ ] 遵循外部 API 優先原則
+
+### 使用者視角 ✅
+- [ ] 需要時使用 context.register_client()
+- [ ] 不直接操作 service layer
+- [ ] 模擬真實使用者操作流程
+
+### 功能正確性 ✅
+- [ ] BDD 測試通過
+- [ ] 手動 API 測試符合需求
+- [ ] 錯誤處理完善
+- [ ] 邊界條件正確
+
+## 成功標準
+- [ ] 所有檢查項目通過
+- [ ] 無 BDD 設計違規
+- [ ] 功能符合業務需求  
+- [ ] 測試品質達到最佳實務標準
+- [ ] 驗收記錄完整詳細
+
+使用此流程可確保每個 User Story 都達到高品質的 BDD 測試標準和功能要求。
