@@ -1,17 +1,19 @@
 def execute(context):
-    """When step: Query unified results through the API"""
+    """When step: Query results from both sync and async commands through the unified API"""
     from conftest import BDDPhase
     
     context.phase = BDDPhase.WHEN
     
-    # Try to query fast command result through unified API
-    fast_response = context.test_client.get(
-        f"/api/sessions/{context.session_id}/results/{context.fast_command_id}"
+    # Query sync command result through unified API
+    # This command had immediate execution (sync mode)
+    sync_query_response = context.test_client.get(
+        f"/api/sessions/{context.session_id}/results/{context.sync_command_id}"
     )
-    context.fast_response = fast_response
+    context.sync_query_response = sync_query_response
     
-    # Try to query slow command result through unified API
-    slow_response = context.test_client.get(
-        f"/api/sessions/{context.session_id}/results/{context.slow_command_id}"
+    # Query async command result through unified API  
+    # This command was submitted for async execution
+    async_query_response = context.test_client.get(
+        f"/api/sessions/{context.session_id}/results/{context.async_command_id}"
     )
-    context.slow_response = slow_response
+    context.async_query_response = async_query_response

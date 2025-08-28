@@ -82,8 +82,23 @@ async def submit_command_with_auto_async_response(
     is_fast_command = "sleep" not in command_request.command_content.lower()
     
     if is_fast_command:
-        # Fast execution: return result immediately
-        mock_result = f"Result of: {command_request.command_content}"
+        # Fast execution: create and complete result immediately for unified query
+        if execution_result_manager:
+            from public_tunnel.models.execution_result import ExecutionResult, ExecutionResultStatus
+            
+            mock_result = f"Result of: {command_request.command_content}"
+            
+            # Create completed result entry for unified query mechanism
+            completed_result = ExecutionResult(
+                command_id=command_id,
+                execution_status=ExecutionResultStatus.COMPLETED,
+                client_id=command_request.target_client_id,
+                session_id=session_id
+            )
+            completed_result.complete_with_success(mock_result)
+            execution_result_manager.store_result(completed_result)
+        else:
+            mock_result = f"Result of: {command_request.command_content}"
         
         return AutoAsyncCommandResponse(
             command_id=command_id,
