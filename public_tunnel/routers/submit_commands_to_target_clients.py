@@ -17,7 +17,8 @@ from public_tunnel.dependencies.providers import (
     CommandValidatorDep,
     CommandQueueManagerDep,
     ClientPresenceTrackerDep,
-    OfflineStatusManagerDep
+    OfflineStatusManagerDep,
+    ExecutionResultManagerDep
 )
 
 router: APIRouter = APIRouter(tags=["targeted-command-submission"])
@@ -31,7 +32,8 @@ async def submit_command_to_target_client_in_session(
     command_validator: CommandValidatorDep,
     command_queue_manager: CommandQueueManagerDep,
     client_presence_tracker: ClientPresenceTrackerDep,
-    offline_status_manager: OfflineStatusManagerDep
+    offline_status_manager: OfflineStatusManagerDep,
+    result_manager: ExecutionResultManagerDep
 ) -> CommandSubmissionToTargetResponse:
     """
     Submit command to a specific target client within a session
@@ -95,6 +97,15 @@ async def submit_command_to_target_client_in_session(
         session_id=session_id,
         target_client_id=command_request.target_client_id,
         command_content=command_request.command_content
+    )
+    
+    # US-021: Create execution result record for unified query mechanism
+    from public_tunnel.models.execution_result import ExecutionResultStatus
+    result_manager.create_and_store_result(
+        command_id=command.command_id,
+        session_id=session_id,
+        client_id=command_request.target_client_id,
+        execution_status=ExecutionResultStatus.PENDING
     )
     
     # Return response with command information
